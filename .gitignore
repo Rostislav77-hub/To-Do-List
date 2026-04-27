@@ -1,0 +1,8 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+tempCodeRunnerFile.js
+*tempCodeRunnerFile*
