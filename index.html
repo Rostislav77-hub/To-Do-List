@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-Do List</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <header>
+    <p class="eyebrow">Мои задачи</p>
+    <h1>To-Do <span>List</span></h1>
+    <div class="stats">
+      <span class="stat">Всего: <strong id="stat-total">0</strong></span>
+      <span class="stat">Выполнено: <strong id="stat-done">0</strong></span>
+      <span class="stat">Осталось: <strong id="stat-left">0</strong></span>
+    </div>
+  </header>
+
+  <div class="input-row">
+    <div class="input-wrap">
+      <input type="text" id="todo-input" placeholder="Добавить новую задачу…" maxlength="200" />
+    </div>
+    <button class="add-btn" id="add-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      Добавить
+    </button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Все</button>
+    <button class="filter-btn" data-filter="active">Активные</button>
+    <button class="filter-btn" data-filter="done">Выполненные</button>
+  </div>
+
+  <ul id="todo-list"></ul>
+
+  <div class="footer-row">
+    <span id="footer-msg"></span>
+    <button class="clear-btn" id="clear-btn" disabled>Очистить выполненные</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
