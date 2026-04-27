@@ -14,4 +14,4 @@
 - JavaScript (ES6+, DOM Manipulation)
 
 ## 🌐 Демо
-[[Ссылка на живое превью появится здесь после деплоя на GitHub Pages](https://rostislav77-hub.github.io/To-Do-List/)]
+[[Click here, Click here](https://rostislav77-hub.github.io/To-Do-List/)]
