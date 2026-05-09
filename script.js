@@ -15,7 +15,7 @@ function render() {
   const visible = todos.filter(t =>
     filter === 'all'    ? true :
     filter === 'done'   ? t.done :
-            !t.done
+           !t.done
   );
 
   list.innerHTML = '';
@@ -35,12 +35,11 @@ function render() {
 
   const total = todos.length;
   const done  = todos.filter(t => t.done).length;
-  statTotal.textContent = total;
-  statDone.textContent  = done;
-  statLeft.textContent  = total - done;
-
-  clearBtn.disabled    = done === 0;
-  footerMsg.textContent = total ? `${done} из ${total} выполнено` : '';
+  statTotal.textContent  = total;
+  statDone.textContent   = done;
+  statLeft.textContent   = total - done;
+  clearBtn.disabled      = done === 0;
+  footerMsg.textContent  = total ? `${done} из ${total} выполнено` : '';
 
   localStorage.setItem('todos', JSON.stringify(todos));
 }
@@ -76,9 +75,9 @@ function addTodo() {
   const text = input.value.trim();
 
   if (!text) {
+    input.classList.add('error');
     input.focus();
-    input.style.borderColor = 'var(--accent2)';
-    setTimeout(() => (input.style.borderColor = ''), 600);
+    setTimeout(() => input.classList.remove('error'), 600);
     return;
   }
 
