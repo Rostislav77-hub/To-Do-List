@@ -1,17 +1,21 @@
 # 📝 Minimalist To-Do List App
 
-Стильное и современное веб-доложение для управления задачами, написанное на чистом JavaScript (Vanilla JS).
+![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
 
-## 🚀 Особенности
-* **Glassmorphism UI:** Сучасний дизайн із використанням кастомних властивостей CSS.
-* **Local Storage:** Завдання зберігаються у браузері та не пропадають після перезавантаження сторінки.
-* **Фільтрація:** Зручне перемикання між усіма, активними та виконаними завданнями.
-* **Адаптивність:** Коректне відображення на мобільних пристроях.
+A stylish and modern task management web application written in pure JavaScript (Vanilla JS).
 
-## 🛠 Технологии
+## 🚀 Peculiarities
+* **Glassmorphism UI:** Modern design using custom CSS properties.
+* **Local Storage:** Tasks are stored in the browser and do not disappear after page reload.
+* **Filtration:** Convenient switching between all, active and completed tasks.
+* **Adaptability:** Correct display on mobile devices.
+
+## 🛠 Technologies
 - HTML5
 - CSS3 (Custom Properties, Flexbox, Animations)
 - JavaScript (ES6+, DOM Manipulation)
 
-## 🌐 Демо
-[[Click here, Click here](https://rostislav77-hub.github.io/To-Do-List/)]
+## 🌐 Demo
+[[Click here](https://rostislav77-hub.github.io/To-Do-List/)]
