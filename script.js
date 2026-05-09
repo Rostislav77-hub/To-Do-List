@@ -1,3 +1,4 @@
+// ── DOM Elements ──────────────────────────────────────────────────────────────
 const input      = document.getElementById('todo-input');
 const addBtn     = document.getElementById('add-btn');
 const list       = document.getElementById('todo-list');
@@ -8,14 +9,37 @@ const statLeft   = document.getElementById('stat-left');
 const footerMsg  = document.getElementById('footer-msg');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
+// ── State ─────────────────────────────────────────────────────────────────────
 let todos  = JSON.parse(localStorage.getItem('todos') || '[]');
 let filter = 'all';
 
+// ── Форматирование даты ───────────────────────────────────────────────────────
+// Выводит: "14:35 · 9 мая 2025"
+function formatDate(iso) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `${time} · ${date}`;
+}
+
+// ── SVG-иконки для дат ────────────────────────────────────────────────────────
+const iconCreated = `
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2"/>
+    <path d="M5.5 3v2.5l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  </svg>`;
+
+const iconDone = `
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <path d="M1.5 6l3 3 5-5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+// ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   const visible = todos.filter(t =>
     filter === 'all'    ? true :
     filter === 'done'   ? t.done :
-           !t.done
+    /* active */          !t.done
   );
 
   list.innerHTML = '';
@@ -44,10 +68,19 @@ function render() {
   localStorage.setItem('todos', JSON.stringify(todos));
 }
 
+// ── Создание <li> ─────────────────────────────────────────────────────────────
 function createItem(todo) {
   const li = document.createElement('li');
   li.className = 'todo-item' + (todo.done ? ' done' : '');
   li.dataset.id = todo.id;
+
+  // Строка с датой выполнения — появляется только если задача выполнена
+  const doneDateHtml = todo.doneAt
+    ? `<span class="todo-date date-done">
+         ${iconDone}
+         Выполнено: ${formatDate(todo.doneAt)}
+       </span>`
+    : '';
 
   li.innerHTML = `
     <button class="check-btn" title="Отметить выполненным">
@@ -56,7 +89,18 @@ function createItem(todo) {
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <span class="todo-text">${escapeHtml(todo.text)}</span>
+
+    <div class="todo-body">
+      <span class="todo-text">${escapeHtml(todo.text)}</span>
+      <div class="todo-dates">
+        <span class="todo-date">
+          ${iconCreated}
+          Создано: ${formatDate(todo.createdAt)}
+        </span>
+        ${doneDateHtml}
+      </div>
+    </div>
+
     <button class="del-btn" title="Удалить">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
         <path d="M2 2l11 11M13 2L2 13" stroke="currentColor"
@@ -71,6 +115,7 @@ function createItem(todo) {
   return li;
 }
 
+// ── Добавить задачу ───────────────────────────────────────────────────────────
 function addTodo() {
   const text = input.value.trim();
 
@@ -81,7 +126,14 @@ function addTodo() {
     return;
   }
 
-  todos.unshift({ id: Date.now(), text, done: false });
+  todos.unshift({
+    id:        Date.now(),
+    text,
+    done:      false,
+    createdAt: new Date().toISOString(), // ← дата создания
+    doneAt:    null                      // ← будет заполнена при выполнении
+  });
+
   input.value = '';
 
   if (filter === 'done') {
@@ -93,11 +145,22 @@ function addTodo() {
   input.focus();
 }
 
+// ── Переключить выполнение ────────────────────────────────────────────────────
 function toggleDone(id) {
-  todos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
+  todos = todos.map(t => {
+    if (t.id !== id) return t;
+
+    const nowDone = !t.done;
+    return {
+      ...t,
+      done:   nowDone,
+      doneAt: nowDone ? new Date().toISOString() : null // ← фиксируем или сбрасываем
+    };
+  });
   render();
 }
 
+// ── Удалить задачу ────────────────────────────────────────────────────────────
 function deleteItem(li, id) {
   li.classList.add('removing');
   li.addEventListener('animationend', () => {
@@ -106,11 +169,13 @@ function deleteItem(li, id) {
   }, { once: true });
 }
 
+// ── Очистить выполненные ──────────────────────────────────────────────────────
 function clearDone() {
   todos = todos.filter(t => !t.done);
   render();
 }
 
+// ── Фильтры ───────────────────────────────────────────────────────────────────
 function updateFilterUI() {
   filterBtns.forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
 }
@@ -123,6 +188,7 @@ filterBtns.forEach(btn => {
   });
 });
 
+// ── Утилита: экранирование HTML ───────────────────────────────────────────────
 function escapeHtml(s) {
   return s
     .replace(/&/g, '&amp;')
@@ -131,8 +197,10 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── События ───────────────────────────────────────────────────────────────────
 addBtn.addEventListener('click', addTodo);
 input.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
 clearBtn.addEventListener('click', clearDone);
 
+// ── Инициализация ─────────────────────────────────────────────────────────────
 render();
