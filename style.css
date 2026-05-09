@@ -1,14 +1,14 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #0f0e17;
-  --surface:   #1a1927;
-  --border:    #2e2c45;
-  --accent:    #e8a838;
-  --accent2:   #f25f4c;
-  --text:      #fffffe;
-  --muted:     #a7a9be;
-  --done-bg:   #1f1d2e;
+  --bg:       #0f0e17;
+  --surface:  #1a1927;
+  --border:   #2e2c45;
+  --accent:   #e8a838;
+  --accent2:  #f25f4c;
+  --text:     #fffffe;
+  --muted:    #a7a9be;
+  --done-bg:  #1f1d2e;
 }
 
 body {
@@ -64,7 +64,6 @@ header h1 {
   font-family: 'Playfair Display', serif;
   font-size: clamp(2rem, 6vw, 3rem);
   line-height: 1.1;
-  color: var(--text);
 }
 header h1 span { color: var(--accent); }
 
@@ -81,24 +80,8 @@ header h1 span { color: var(--accent); }
   gap: 10px;
   margin-bottom: 32px;
 }
-.input-wrap {
-  flex: 1;
-  position: relative;
-}
-.input-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity .25s;
-}
-.input-wrap:focus-within::before { opacity: 1; }
+
+.input-wrap { flex: 1; }
 
 input[type="text"] {
   width: 100%;
@@ -110,12 +93,19 @@ input[type="text"] {
   font-size: .95rem;
   padding: 14px 18px;
   outline: none;
-  transition: border-color .2s;
+  transition: border-color .2s, box-shadow .2s;
 }
 input[type="text"]::placeholder { color: var(--muted); }
-input[type="text"]:focus { border-color: transparent; }
+input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232, 168, 56, 0.18);
+}
+input[type="text"].error {
+  border-color: var(--accent2);
+  box-shadow: 0 0 0 3px rgba(242, 95, 76, 0.18);
+}
 
-button.add-btn {
+.add-btn {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
   border-radius: 14px;
@@ -131,8 +121,8 @@ button.add-btn {
   align-items: center;
   gap: 6px;
 }
-button.add-btn:hover  { opacity: .88; }
-button.add-btn:active { transform: scale(.96); }
+.add-btn:hover  { opacity: .88; }
+.add-btn:active { transform: scale(.96); }
 
 .filters {
   display: flex;
@@ -176,15 +166,15 @@ button.add-btn:active { transform: scale(.96); }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
-  animation: slideIn .3s cubic-bezier(.34,1.56,.64,1) both;
-  transition: background .2s, border-color .2s, opacity .25s;
+  animation: slideIn .3s cubic-bezier(.34, 1.56, .64, 1) both;
+  transition: border-color .2s, opacity .25s;
 }
 .todo-item:hover { border-color: #3e3c58; }
 .todo-item.done  { background: var(--done-bg); opacity: .65; }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(14px) scale(.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
 }
 @keyframes fadeOut {
   to { opacity: 0; transform: scale(.95); }
@@ -213,7 +203,6 @@ button.add-btn:active { transform: scale(.96); }
 .todo-text {
   flex: 1;
   font-size: .92rem;
-  font-weight: 400;
   line-height: 1.4;
   word-break: break-word;
   transition: color .2s;
@@ -230,11 +219,11 @@ button.add-btn:active { transform: scale(.96); }
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
-  transition: color .2s, background .2s;
-  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .2s, background .2s;
 }
-.del-btn:hover { color: var(--accent2); background: rgba(242,95,76,.1); }
+.del-btn:hover { color: var(--accent2); background: rgba(242, 95, 76, .1); }
 
 .empty {
   text-align: center;
@@ -264,5 +253,5 @@ button.add-btn:active { transform: scale(.96); }
   border-radius: 6px;
   transition: color .2s, background .2s;
 }
-.clear-btn:hover    { color: var(--accent2); background: rgba(242,95,76,.1); }
+.clear-btn:hover    { color: var(--accent2); background: rgba(242, 95, 76, .1); }
 .clear-btn:disabled { opacity: 0; pointer-events: none; }
