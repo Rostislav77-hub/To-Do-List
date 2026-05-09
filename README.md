@@ -18,4 +18,4 @@ A stylish and modern task management web application written in pure JavaScript 
 - JavaScript (ES6+, DOM Manipulation)
 
 ## 🌐 Demo
-[[Click here](https://github.com/Rostislav77-hub/To-Do-List.git)]
+[[Click here](https://Rostislav77-hub.github.io/To-Do-List/)]
