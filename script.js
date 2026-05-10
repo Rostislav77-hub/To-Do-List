@@ -21,7 +21,7 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 
 let todos      = [];
 let filter     = 'all';
-let activeTab  = 'login';  
+let activeTab  = 'login';   
 let currentUser = null;
 
 function showApp(user) {
@@ -67,7 +67,7 @@ authSubmit.addEventListener('click', async () => {
   if (activeTab === 'login') {
     ({ error } = await db.auth.signInWithPassword({ email, password }));
   } else {
-    ({ error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: SITE_URL } }));
+    ({ error } = await db.auth.signUp({ email, password }));
     if (!error) {
       authError.style.color = 'var(--green)';
       authError.textContent = 'Письмо с подтверждением отправлено на email';
@@ -297,7 +297,6 @@ async function clearDone() {
   const doneIds = todos.filter(t => t.done).map(t => t.id);
   todos = todos.filter(t => !t.done);
   render();
-
   await db.from('todos').delete().in('id', doneIds);
 }
 
@@ -320,6 +319,17 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-addBtn.addEventListener('click', addTodo);
+const eyeBtn    = document.getElementById('eye-btn');
+const eyeOpen   = eyeBtn.querySelector('.eye-open');
+const eyeClosed = eyeBtn.querySelector('.eye-closed');
+
+eyeBtn.addEventListener('click', () => {
+  const isPassword = authPassword.type === 'password';
+  authPassword.type = isPassword ? 'text' : 'password';
+  eyeOpen.classList.toggle('hidden', isPassword);
+  eyeClosed.classList.toggle('hidden', !isPassword);
+});
+
+
 input.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
 clearBtn.addEventListener('click', clearDone);
