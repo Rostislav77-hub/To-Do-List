@@ -566,3 +566,126 @@ input[type="text"].error {
 }
 .clear-btn:hover    { color: var(--accent2); background: rgba(242,95,76,.1); }
 .clear-btn:disabled { opacity: 0; pointer-events: none; }
+
+:root[data-theme="light"] {
+  --bg:      #f4f3f0;
+  --surface: #ffffff;
+  --border:  #e0ddd8;
+  --text:    #0f0e17;
+  --muted:   #6e6d7a;
+  --done-bg: #f9f8f6;
+}
+
+.page {
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.app-screen { position: relative; }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 50;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: color .2s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { transition: transform .2s; }
+.nav-btn.active svg { transform: scale(1.1); }
+
+.settings-section {
+  margin-bottom: 28px;
+}
+.settings-label {
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 12px;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.theme-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 8px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.theme-btn:hover { border-color: var(--accent); }
+.theme-btn.active {
+  border-color: var(--accent);
+  background: rgba(232,168,56,.08);
+}
+.theme-icon { font-size: 1.5rem; }
+.theme-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settings-user-email {
+  font-size: .85rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--accent2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .82rem;
+  font-weight: 500;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, border-color .2s;
+}
+.settings-logout-btn:hover {
+  background: rgba(242,95,76,.1);
+  border-color: var(--accent2);
+}
