@@ -333,3 +333,9 @@ eyeBtn.addEventListener('click', () => {
 
 input.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
 clearBtn.addEventListener('click', clearDone);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/To-Do-List/sw.js');
+  });
+}
