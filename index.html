@@ -1,50 +1,107 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>To-Do List</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-<div class="app">
-  <header>
-    <p class="eyebrow">Мои задачи</p>
-    <h1>To-Do <span>List</span></h1>
-    <div class="stats">
-      <span class="stat">Всего: <strong id="stat-total">0</strong></span>
-      <span class="stat">Выполнено: <strong id="stat-done">0</strong></span>
-      <span class="stat">Осталось: <strong id="stat-left">0</strong></span>
+
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <p class="eyebrow">Добро пожаловать</p>
+      <h1 class="auth-title">To-Do <span>List</span></h1>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Войти</button>
+        <button class="auth-tab" data-tab="register">Регистрация</button>
+      </div>
+
+      <div class="auth-form">
+        <div class="field-group">
+          <label>Email</label>
+          <input type="email" id="auth-email" placeholder="you@example.com"/>
+        </div>
+        <div class="field-group">
+          <label>Пароль</label>
+          <input type="password" id="auth-password" placeholder="Минимум 6 символов"/>
+        </div>
+
+        <p class="auth-error" id="auth-error"></p>
+
+        <button class="btn-primary" id="auth-submit">Войти</button>
+
+        <div class="divider"><span>или</span></div>
+
+        <button class="btn-google" id="auth-google">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+            <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          Войти через Google
+        </button>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <div class="input-row">
-    <div class="input-wrap">
-      <input type="text" id="todo-input" placeholder="Добавить новую задачу…" maxlength="200" />
+
+  <div class="app-screen hidden" id="app-screen">
+    <div class="app">
+      <header>
+        <div class="header-top">
+          <div>
+            <p class="eyebrow">Мои задачи</p>
+            <h1>To-Do <span>List</span></h1>
+          </div>
+          <div class="user-block">
+            <span class="user-email" id="user-email"></span>
+            <button class="logout-btn" id="logout-btn" title="Выйти">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="stats">
+          <span class="stat">Всего: <strong id="stat-total">0</strong></span>
+          <span class="stat">Выполнено: <strong id="stat-done">0</strong></span>
+          <span class="stat">Осталось: <strong id="stat-left">0</strong></span>
+        </div>
+      </header>
+
+      <div class="input-row">
+        <div class="input-wrap">
+          <input type="text" id="todo-input" placeholder="Добавить новую задачу…" maxlength="200"/>
+        </div>
+        <button class="add-btn" id="add-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">Все</button>
+        <button class="filter-btn" data-filter="active">Активные</button>
+        <button class="filter-btn" data-filter="done">Выполненные</button>
+      </div>
+
+      <ul id="todo-list"></ul>
+
+      <div class="footer-row">
+        <span id="footer-msg"></span>
+        <button class="clear-btn" id="clear-btn" disabled>Очистить выполненные</button>
+      </div>
     </div>
-    <button class="add-btn" id="add-btn">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-      Добавить
-    </button>
   </div>
 
-  <div class="filters">
-    <button class="filter-btn active" data-filter="all">Все</button>
-    <button class="filter-btn" data-filter="active">Активные</button>
-    <button class="filter-btn" data-filter="done">Выполненные</button>
-  </div>
-
-  <ul id="todo-list"></ul>
-
-  <div class="footer-row">
-    <span id="footer-msg"></span>
-    <button class="clear-btn" id="clear-btn" disabled>Очистить выполненные</button>
-  </div>
-</div>
-
-<script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
