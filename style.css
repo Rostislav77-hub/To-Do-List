@@ -19,7 +19,6 @@ body {
   font-family: 'DM Sans', sans-serif;
 }
 
-/* Фоновые блобы */
 body::before, body::after {
   content: '';
   position: fixed;
@@ -42,9 +41,68 @@ body::after {
 
 .hidden { display: none !important; }
 
-/* ═══════════════════════════════════════════
-   AUTH SCREEN
-═══════════════════════════════════════════ */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .4s, visibility .4s;
+}
+.loading-screen.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.loading-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  color: var(--text);
+}
+.loading-logo span { color: var(--accent); }
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.loading-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dotBounce .9s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2) {
+  animation-delay: .15s;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+.loading-dots span:nth-child(3) {
+  animation-delay: .3s;
+  background: var(--accent2);
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: .4; }
+  40%            { transform: scale(1.2); opacity: 1;  }
+}
+
+.loading-text {
+  font-size: .85rem;
+  color: var(--muted);
+  letter-spacing: .1em;
+}
+
 .auth-screen {
   position: relative;
   z-index: 1;
@@ -72,7 +130,6 @@ body::after {
 }
 .auth-title span { color: var(--accent); }
 
-/* Табы */
 .auth-tabs {
   display: flex;
   gap: 4px;
@@ -100,7 +157,6 @@ body::after {
   color: var(--text);
 }
 
-/* Поля */
 .field-group {
   display: flex;
   flex-direction: column;
@@ -120,16 +176,16 @@ body::after {
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-size: .92rem;
-  /* Фиксированная высота — чтобы не прыгало при переключении пароля */
+  
   height: 46px;
   padding: 0 16px;
   outline: none;
   transition: border-color .2s, box-shadow .2s;
   -webkit-text-fill-color: var(--text);
-  /* Одинаковый шрифт для обоих режимов пароля */
+  
   font-variant-numeric: tabular-nums;
 }
-/* Убираем белый фон автозаполнения браузера */
+
 .field-group input:-webkit-autofill,
 .field-group input:-webkit-autofill:hover,
 .field-group input:-webkit-autofill:focus {
@@ -153,7 +209,6 @@ body::after {
   box-shadow: 0 0 0 3px rgba(242,95,76,.15);
 }
 
-/* ── Password wrap + eye button ── */
 .password-wrap {
   position: relative;
   display: flex;
@@ -179,7 +234,6 @@ body::after {
 }
 .eye-btn:hover { color: var(--text); }
 
-/* Ошибка */
 .auth-error {
   font-size: .8rem;
   color: var(--accent2);
@@ -187,7 +241,6 @@ body::after {
   margin-bottom: 4px;
 }
 
-/* Кнопка входа */
 .btn-primary {
   width: 100%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -206,7 +259,6 @@ body::after {
 .btn-primary:active { transform: scale(.98); }
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 
-/* Разделитель */
 .divider {
   display: flex;
   align-items: center;
@@ -222,7 +274,6 @@ body::after {
   background: var(--border);
 }
 
-/* Google кнопка */
 .btn-google {
   width: 100%;
   display: flex;
@@ -242,9 +293,6 @@ body::after {
 }
 .btn-google:hover { border-color: var(--muted); background: var(--border); }
 
-/* ═══════════════════════════════════════════
-   APP SCREEN
-═══════════════════════════════════════════ */
 .app-screen {
   position: relative;
   z-index: 1;
@@ -260,7 +308,6 @@ body::after {
   max-width: 560px;
 }
 
-/* Header */
 header { margin-bottom: 40px; }
 
 .header-top {
@@ -286,7 +333,6 @@ header h1 {
 }
 header h1 span { color: var(--accent); }
 
-/* Блок пользователя */
 .user-block {
   display: flex;
   align-items: center;
@@ -324,7 +370,6 @@ header h1 span { color: var(--accent); }
 .stat { font-size: .8rem; color: var(--muted); }
 .stat strong { color: var(--text); font-weight: 500; }
 
-/* Input row */
 .input-row {
   display: flex;
   gap: 10px;
@@ -354,7 +399,6 @@ input[type="text"].error {
   box-shadow: 0 0 0 3px rgba(242,95,76,.18);
 }
 
-/* Add button */
 .add-btn {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
@@ -374,7 +418,6 @@ input[type="text"].error {
 .add-btn:hover  { opacity: .88; }
 .add-btn:active { transform: scale(.96); }
 
-/* Filters */
 .filters {
   display: flex;
   gap: 6px;
@@ -399,7 +442,6 @@ input[type="text"].error {
 }
 .filter-btn.active { background: var(--border); color: var(--text); }
 
-/* Todo list */
 #todo-list {
   list-style: none;
   display: flex;
@@ -430,7 +472,6 @@ input[type="text"].error {
 }
 .todo-item.removing { animation: fadeOut .2s forwards; }
 
-/* Чекбокс */
 .check-btn {
   width: 22px; height: 22px;
   flex-shrink: 0;
@@ -451,7 +492,6 @@ input[type="text"].error {
 .check-btn svg { display: none; }
 .todo-item.done .check-btn svg { display: block; }
 
-/* Контент */
 .todo-body {
   flex: 1;
   display: flex;
@@ -470,7 +510,6 @@ input[type="text"].error {
   color: var(--muted);
 }
 
-/* Даты */
 .todo-dates { display: flex; flex-direction: column; gap: 4px; }
 .todo-date {
   display: flex;
@@ -483,7 +522,6 @@ input[type="text"].error {
 .todo-date svg { flex-shrink: 0; }
 .todo-date.date-done { color: var(--green); }
 
-/* Кнопка удаления */
 .del-btn {
   background: none;
   border: none;
@@ -498,7 +536,6 @@ input[type="text"].error {
 }
 .del-btn:hover { color: var(--accent2); background: rgba(242,95,76,.1); }
 
-/* Empty state */
 .empty {
   text-align: center;
   color: var(--muted);
@@ -507,7 +544,6 @@ input[type="text"].error {
 }
 .empty .icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
 
-/* Footer */
 .footer-row {
   display: flex;
   justify-content: space-between;

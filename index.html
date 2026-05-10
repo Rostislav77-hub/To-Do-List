@@ -6,23 +6,35 @@
   <title>To-Do List</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css"/>
-  <link rel="manifest" href="manifest.json"/>
-<meta name="theme-color" content="#e8a838"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="To-Do"/>
 </head>
 <body>
 
+  
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-card">
+      <div class="loading-logo">To-Do <span>List</span></div>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <p class="loading-text">Подключаемся</p>
+    </div>
+  </div>
+
+  
   <div class="auth-screen" id="auth-screen">
     <div class="auth-card">
       <p class="eyebrow">Добро пожаловать</p>
       <h1 class="auth-title">To-Do <span>List</span></h1>
 
+      
       <div class="auth-tabs">
         <button class="auth-tab active" data-tab="login">Войти</button>
         <button class="auth-tab" data-tab="register">Регистрация</button>
       </div>
 
+      
       <div class="auth-form">
         <div class="field-group">
           <label>Email</label>
@@ -63,6 +75,7 @@
     </div>
   </div>
 
+  
   <div class="app-screen hidden" id="app-screen">
     <div class="app">
       <header>
@@ -114,6 +127,7 @@
     </div>
   </div>
 
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="script.js"></script>

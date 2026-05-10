@@ -1,3 +1,4 @@
+const loadingScreen = document.getElementById('loading-screen');
 const authScreen   = document.getElementById('auth-screen');
 const appScreen    = document.getElementById('app-screen');
 const authTabs     = document.querySelectorAll('.auth-tab');
@@ -19,9 +20,9 @@ const statLeft   = document.getElementById('stat-left');
 const footerMsg  = document.getElementById('footer-msg');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
-let todos      = [];
-let filter     = 'all';
-let activeTab  = 'login';   
+let todos       = [];
+let filter      = 'all';
+let activeTab   = 'login';
 let currentUser = null;
 
 function showApp(user) {
@@ -98,6 +99,7 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 db.auth.onAuthStateChange((_event, session) => {
+  loadingScreen.classList.add('fade-out');
   if (session?.user) {
     showApp(session.user);
   } else {
@@ -119,7 +121,7 @@ async function loadTodos() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) { console.error('Ошибка загрузки:', error); return; }
+  if (error) { console.error(error); return; }
   todos = data || [];
   render();
 }
@@ -131,27 +133,19 @@ async function insertTodo(text) {
     .select()
     .single();
 
-  if (error) { console.error('Ошибка добавления:', error); return; }
+  if (error) { console.error(error); return; }
   todos.unshift(data);
   render();
 }
 
 async function updateTodo(id, fields) {
-  const { error } = await db
-    .from('todos')
-    .update(fields)
-    .eq('id', id);
-
-  if (error) console.error('Ошибка обновления:', error);
+  const { error } = await db.from('todos').update(fields).eq('id', id);
+  if (error) console.error(error);
 }
 
 async function deleteTodo(id) {
-  const { error } = await db
-    .from('todos')
-    .delete()
-    .eq('id', id);
-
-  if (error) console.error('Ошибка удаления:', error);
+  const { error } = await db.from('todos').delete().eq('id', id);
+  if (error) console.error(error);
 }
 
 let realtimeChannel = null;
@@ -164,7 +158,7 @@ function subscribeRealtime() {
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'todos', filter: `user_id=eq.${currentUser.id}` },
-      () => loadTodos() 
+      () => loadTodos()
     )
     .subscribe();
 }
@@ -189,9 +183,8 @@ const iconDone = `
 
 function render() {
   const visible = todos.filter(t =>
-    filter === 'all'    ? true :
-    filter === 'done'   ? t.done :
-                        ! t.done
+    filter === 'all'  ? true :
+    filter === 'done' ? t.done : !t.done
   );
 
   list.innerHTML = '';
@@ -224,9 +217,7 @@ function createItem(todo) {
   li.dataset.id = todo.id;
 
   const doneDateHtml = todo.done_at
-    ? `<span class="todo-date date-done">
-         ${iconDone} Выполнено: ${formatDate(todo.done_at)}
-       </span>`
+    ? `<span class="todo-date date-done">${iconDone} Выполнено: ${formatDate(todo.done_at)}</span>`
     : '';
 
   li.innerHTML = `
@@ -239,16 +230,13 @@ function createItem(todo) {
     <div class="todo-body">
       <span class="todo-text">${escapeHtml(todo.text)}</span>
       <div class="todo-dates">
-        <span class="todo-date">
-          ${iconCreated} Создано: ${formatDate(todo.created_at)}
-        </span>
+        <span class="todo-date">${iconCreated} Создано: ${formatDate(todo.created_at)}</span>
         ${doneDateHtml}
       </div>
     </div>
     <button class="del-btn" title="Удалить">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M2 2l11 11M13 2L2 13" stroke="currentColor"
-              stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M2 2l11 11M13 2L2 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
     </button>
   `;
@@ -273,14 +261,10 @@ async function addTodo() {
 }
 
 async function toggleDone(todo) {
-  const nowDone  = !todo.done;
-  const doneAt   = nowDone ? new Date().toISOString() : null;
-
-  todos = todos.map(t =>
-    t.id === todo.id ? { ...t, done: nowDone, done_at: doneAt } : t
-  );
+  const nowDone = !todo.done;
+  const doneAt  = nowDone ? new Date().toISOString() : null;
+  todos = todos.map(t => t.id === todo.id ? { ...t, done: nowDone, done_at: doneAt } : t);
   render();
-
   await updateTodo(todo.id, { done: nowDone, done_at: doneAt });
 }
 
@@ -303,6 +287,7 @@ async function clearDone() {
 function updateFilterUI() {
   filterBtns.forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
 }
+
 filterBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     filter = btn.dataset.filter;
@@ -330,7 +315,7 @@ eyeBtn.addEventListener('click', () => {
   eyeClosed.classList.toggle('hidden', !isPassword);
 });
 
-
+addBtn.addEventListener('click', addTodo);
 input.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
 clearBtn.addEventListener('click', clearDone);
 
