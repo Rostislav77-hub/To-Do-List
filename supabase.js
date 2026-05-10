@@ -4,3 +4,8 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 const { createClient } = window.supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const SITE_URL = window.location.hostname === 'localhost' ||
+                 window.location.hostname === '127.0.0.1'
+  ? window.location.origin
+  : 'https://rostislav77-hub.github.io/To-Do-List';

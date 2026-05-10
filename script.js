@@ -21,7 +21,7 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 
 let todos      = [];
 let filter     = 'all';
-let activeTab  = 'login';   // 'login' | 'register'
+let activeTab  = 'login';  
 let currentUser = null;
 
 function showApp(user) {
@@ -67,7 +67,7 @@ authSubmit.addEventListener('click', async () => {
   if (activeTab === 'login') {
     ({ error } = await db.auth.signInWithPassword({ email, password }));
   } else {
-    ({ error } = await db.auth.signUp({ email, password }));
+    ({ error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: SITE_URL } }));
     if (!error) {
       authError.style.color = 'var(--green)';
       authError.textContent = 'Письмо с подтверждением отправлено на email';
