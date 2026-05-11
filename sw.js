@@ -1,4 +1,4 @@
-const CACHE = 'todo-v1';
+const CACHE = 'todo-v2';
 const ASSETS = [
   '/To-Do-List/',
   '/To-Do-List/index.html',
@@ -9,9 +9,19 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(ASSETS))
   );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
