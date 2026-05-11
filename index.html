@@ -77,14 +77,6 @@
               <p class="eyebrow">Мои задачи</p>
               <h1>To-Do <span>List</span></h1>
             </div>
-            <div class="user-block">
-              <span class="user-email" id="user-email"></span>
-              <button class="logout-btn" id="logout-btn" title="Выйти">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
           </div>
           <div class="stats">
             <span class="stat">Всего: <strong id="stat-total">0</strong></span>
@@ -143,12 +135,30 @@
 
         <div class="settings-section">
           <p class="settings-label">Аккаунт</p>
-          <div class="settings-card">
-            <span class="settings-user-email" id="settings-user-email"></span>
-            <button class="settings-logout-btn" id="settings-logout-btn">
-              Выйти из аккаунта
-            </button>
+          <div class="account-card">
+            <div class="account-avatar" id="account-avatar"></div>
+            <div class="account-info">
+              <span class="account-email" id="settings-user-email"></span>
+              <span class="account-hint">Ваш аккаунт</span>
+            </div>
           </div>
+          <button class="settings-logout-btn" id="settings-logout-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Выйти из аккаунта
+          </button>
+        </div>
+
+        <div class="settings-section" id="install-section" style="display:none">
+          <p class="settings-label">Приложение</p>
+          <button class="install-btn" id="install-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2v10M5 8l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Установить приложение
+          </button>
         </div>
       </div>
     </div>

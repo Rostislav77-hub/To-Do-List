@@ -7,8 +7,6 @@ const authPassword = document.getElementById('auth-password');
 const authSubmit   = document.getElementById('auth-submit');
 const authGoogle   = document.getElementById('auth-google');
 const authError    = document.getElementById('auth-error');
-const userEmailEl  = document.getElementById('user-email');
-const logoutBtn    = document.getElementById('logout-btn');
 
 const input      = document.getElementById('todo-input');
 const addBtn     = document.getElementById('add-btn');
@@ -24,7 +22,6 @@ const navBtns            = document.querySelectorAll('.nav-btn');
 const pageTasks          = document.getElementById('page-tasks');
 const pageSettings       = document.getElementById('page-settings');
 const themeBtns          = document.querySelectorAll('.theme-btn');
-const settingsUserEmail  = document.getElementById('settings-user-email');
 const settingsLogoutBtn  = document.getElementById('settings-logout-btn');
 
 let todos       = [];
@@ -65,10 +62,33 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('install-section').style.display = 'block';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-section').style.display = 'none';
+  deferredInstallPrompt = null;
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('install-section').style.display = 'none';
+});
+
 function showApp(user) {
   currentUser = user;
-  userEmailEl.textContent = user.email || 'Пользователь';
-  settingsUserEmail.textContent = user.email || 'Пользователь';
+  const email = user.email || 'Пользователь';
+  const avatar = email.charAt(0).toUpperCase();
+  document.getElementById('account-avatar').textContent = avatar;
+  document.getElementById('settings-user-email').textContent = email;
   authScreen.classList.add('hidden');
   appScreen.classList.remove('hidden');
   showPage('tasks');
@@ -137,7 +157,6 @@ authGoogle.addEventListener('click', async () => {
 });
 
 const logout = async () => await db.auth.signOut();
-logoutBtn.addEventListener('click', logout);
 settingsLogoutBtn.addEventListener('click', logout);
 
 db.auth.onAuthStateChange((_event, session) => {

@@ -673,19 +673,87 @@ input[type="text"].error {
   white-space: nowrap;
 }
 .settings-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: none;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--accent2);
   font-family: 'DM Sans', sans-serif;
-  font-size: .82rem;
+  font-size: .88rem;
   font-weight: 500;
-  padding: 8px 14px;
+  padding: 12px;
   cursor: pointer;
-  white-space: nowrap;
+  margin-top: 10px;
   transition: background .2s, border-color .2s;
 }
 .settings-logout-btn:hover {
   background: rgba(242,95,76,.1);
   border-color: var(--accent2);
 }
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+.account-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: #0f0e17;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.account-email {
+  font-size: .88rem;
+  color: var(--text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-hint {
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.install-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 14px;
+  color: #0f0e17;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .92rem;
+  font-weight: 600;
+  padding: 14px;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
+}
+.install-btn:hover  { opacity: .88; }
+.install-btn:active { transform: scale(.98); }
