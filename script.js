@@ -156,9 +156,22 @@ function showAuth() {
   authScreen.classList.remove('hidden');
 }
 
+let savedLoginEmail = ''; 
+
 authTabs.forEach(tab => {
   tab.addEventListener('click', () => {
+    const prevTab = activeTab;
     activeTab = tab.dataset.tab;
+
+    if (activeTab === 'register') {
+      savedLoginEmail = authEmail.value; 
+      authEmail.value = '';
+      authPassword.value = '';
+    } else if (activeTab === 'login' && prevTab === 'register') {
+      authEmail.value = savedLoginEmail;
+      authPassword.value = '';
+    }
+
     authTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
     authSubmit.textContent = activeTab === 'login' ? 'Войти' : 'Зарегистрироваться';
     authError.textContent  = '';
