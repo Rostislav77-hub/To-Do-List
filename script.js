@@ -209,8 +209,39 @@ authGoogle.addEventListener('click', async () => {
   });
 });
 
-const logout = async () => await db.auth.signOut();
-settingsLogoutBtn.addEventListener('click', logout);
+let logoutTimer;
+
+function resetLogoutBtn() {
+  settingsLogoutBtn.classList.remove('confirm-mode');
+  settingsLogoutBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Выйти из аккаунта
+  `;
+  settingsLogoutBtn.style.background = '';
+  settingsLogoutBtn.style.borderColor = '';
+}
+
+settingsLogoutBtn.addEventListener('click', async () => {
+  if (settingsLogoutBtn.classList.contains('confirm-mode')) {
+    clearTimeout(logoutTimer);
+    await db.auth.signOut();
+    resetLogoutBtn(); 
+  } else {
+    settingsLogoutBtn.classList.add('confirm-mode');
+    settingsLogoutBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v8M8 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Подтвердить выход
+    `;
+    settingsLogoutBtn.style.background = 'rgba(242,95,76,.15)';
+    settingsLogoutBtn.style.borderColor = 'var(--accent2)';
+
+    logoutTimer = setTimeout(resetLogoutBtn, 3000);
+  }
+});
 
 db.auth.onAuthStateChange((_event, session) => {
   loadingScreen.classList.add('fade-out');
