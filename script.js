@@ -62,7 +62,7 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 const isInStandaloneMode = window.navigator.standalone === true ||
   window.matchMedia('(display-mode: standalone)').matches;
 
