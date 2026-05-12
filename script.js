@@ -66,12 +66,10 @@ const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 const isInStandaloneMode = window.navigator.standalone === true ||
   window.matchMedia('(display-mode: standalone)').matches;
 
-if (isIOS && !isInStandaloneMode) {
-  document.getElementById('ios-install-section').style.display = 'block';
-}
-
 if (isInStandaloneMode) {
   document.getElementById('uninstall-section').style.display = 'block';
+} else if (isIOS) {
+  document.getElementById('ios-install-section').style.display = 'block';
 }
 
 document.getElementById('uninstall-btn').addEventListener('click', () => {
@@ -109,6 +107,7 @@ let deferredInstallPrompt = null;
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
+  if (isIOS || isInStandaloneMode) return;
   deferredInstallPrompt = e;
   document.getElementById('install-section').style.display = 'block';
 });
