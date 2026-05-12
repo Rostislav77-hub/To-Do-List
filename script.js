@@ -31,14 +31,25 @@ let currentUser = null;
 
 function applyTheme(theme) {
   const root = document.documentElement;
+  let actualTheme = theme;
+  
   if (theme === 'system') {
     const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    actualTheme = dark ? 'dark' : 'light';
+    root.setAttribute('data-theme', actualTheme);
   } else {
     root.setAttribute('data-theme', theme);
   }
+  
   themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
   localStorage.setItem('theme', theme);
+
+  const iconSun = document.querySelector('.icon-sun');
+  const iconMoon = document.querySelector('.icon-moon');
+  if (iconSun && iconMoon) {
+    iconSun.classList.toggle('hidden', actualTheme !== 'dark');  
+    iconMoon.classList.toggle('hidden', actualTheme === 'dark'); 
+  }
 }
 
 const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -423,5 +434,13 @@ clearBtn.addEventListener('click', clearDone);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/To-Do-List/sw.js');
+  });
+}
+
+const quickThemeToggle = document.getElementById('quick-theme-toggle');
+if (quickThemeToggle) {
+  quickThemeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
   });
 }
