@@ -194,7 +194,10 @@ body::after {
   caret-color: #fffffe;
   transition: background-color 9999s ease-in-out 0s;
 }
-.field-group input::placeholder { color: var(--muted); }
+.field-group input::placeholder { 
+  color: var(--muted); 
+  opacity: 0.4; 
+}
 .field-group input:hover {
   border-color: #5a5878;
   background: #16151f;
@@ -389,7 +392,10 @@ input[type="text"] {
   outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
-input[type="text"]::placeholder { color: var(--muted); }
+input[type="text"]::placeholder { 
+  color: var(--muted); 
+  opacity: 0.4; 
+}
 input[type="text"]:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(232,168,56,.18);
