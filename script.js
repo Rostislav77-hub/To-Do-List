@@ -447,6 +447,12 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !authScreen.classList.contains('hidden')) {
+    authSubmit.click(); 
+  }
+});
+
 const eyeBtn    = document.getElementById('eye-btn');
 const eyeOpen   = eyeBtn.querySelector('.eye-open');
 const eyeClosed = eyeBtn.querySelector('.eye-closed');
