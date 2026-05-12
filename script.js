@@ -63,11 +63,47 @@ navBtns.forEach(btn => {
 });
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isInStandaloneMode = window.navigator.standalone === true;
+const isInStandaloneMode = window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches;
 
 if (isIOS && !isInStandaloneMode) {
   document.getElementById('ios-install-section').style.display = 'block';
 }
+
+if (isInStandaloneMode) {
+  document.getElementById('uninstall-section').style.display = 'block';
+}
+
+document.getElementById('uninstall-btn').addEventListener('click', () => {
+  const isAuthed = !!currentUser;
+  const isIosDevice = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  document.getElementById('modal-text').textContent = isAuthed
+    ? 'После удаления приложения потребуется войти в аккаунт заново. Все задачи сохранятся в облаке.'
+    : 'Вы не авторизованы — задачи не сохранятся. Рекомендуем войти в аккаунт перед удалением.';
+
+  if (isIosDevice) {
+    document.getElementById('uninstall-step1').textContent = 'Зажми иконку приложения на экране Домой';
+    document.getElementById('uninstall-step2').innerHTML = 'Нажми <strong>«Удалить приложение»</strong>';
+    document.getElementById('uninstall-step3').innerHTML = 'Подтверди нажав <strong>«Удалить»</strong>';
+  } else {
+    document.getElementById('uninstall-step1').textContent = 'Нажми правой кнопкой на иконку в панели задач или на рабочем столе';
+    document.getElementById('uninstall-step2').innerHTML = 'Выбери <strong>«Удалить To-Do List»</strong>';
+    document.getElementById('uninstall-step3').innerHTML = 'Подтверди удаление в появившемся окне';
+  }
+
+  document.getElementById('uninstall-modal').classList.remove('hidden');
+});
+
+document.getElementById('modal-close-btn').addEventListener('click', () => {
+  document.getElementById('uninstall-modal').classList.add('hidden');
+});
+
+document.getElementById('uninstall-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('uninstall-modal')) {
+    document.getElementById('uninstall-modal').classList.add('hidden');
+  }
+});
 
 let deferredInstallPrompt = null;
 
