@@ -62,6 +62,13 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.navigator.standalone === true;
+
+if (isIOS && !isInStandaloneMode) {
+  document.getElementById('ios-install-section').style.display = 'block';
+}
+
 let deferredInstallPrompt = null;
 
 window.addEventListener('beforeinstallprompt', e => {

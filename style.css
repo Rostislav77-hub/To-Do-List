@@ -757,3 +757,34 @@ input[type="text"].error {
 }
 .install-btn:hover  { opacity: .88; }
 .install-btn:active { transform: scale(.98); }
+.ios-install-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ios-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: .88rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.ios-step strong { color: var(--accent); }
+.ios-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0f0e17;
+  font-size: .78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
