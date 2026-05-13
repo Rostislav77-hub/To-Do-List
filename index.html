@@ -48,6 +48,7 @@
       <p class="eyebrow">Добро пожаловать</p>
       <h1 class="auth-title">To-Do <span>List</span></h1>
       <div class="auth-tabs">
+        <button class="auth-tab" data-tab="guest">Без авторизации</button>
         <button class="auth-tab active" data-tab="login">Войти</button>
         <button class="auth-tab" data-tab="register">Регистрация</button>
       </div>
@@ -155,19 +156,27 @@
 
         <div class="settings-section">
           <p class="settings-label">Аккаунт</p>
-          <div class="account-card">
-            <div class="account-avatar" id="account-avatar"></div>
-            <div class="account-info">
-              <span class="account-email" id="settings-user-email"></span>
-              <span class="account-hint">Ваш аккаунт</span>
+          <div id="account-ui-authorized">
+            <div class="account-card">
+              <div class="account-avatar" id="account-avatar"></div>
+              <div class="account-info">
+                <span class="account-email" id="settings-user-email"></span>
+                <span class="account-hint">Ваш аккаунт</span>
+              </div>
             </div>
+            <button class="settings-logout-btn" id="settings-logout-btn">
+               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+               Выйти из аккаунта
+            </button>
           </div>
-          <button class="settings-logout-btn" id="settings-logout-btn">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Выйти из аккаунта
-          </button>
+          
+          <div id="account-ui-guest" class="hidden">
+            <div class="modal-text guest-warning-text">
+              <strong>Вы не авторизованы.</strong><br>
+              В течение неактивности (3-7 дней) задачи могут сброситься. Рекомендуется войти для сохранения прогресса.
+            </div>
+            <button class="btn-primary" id="guest-login-btn" style="margin-top: 12px; height: 44px; padding: 0;">Войти</button>
+          </div>
         </div>
 
         <div class="settings-section" id="install-section" style="display:none">
