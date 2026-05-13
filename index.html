@@ -10,13 +10,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-title" content="To-Do"/>
   <link rel="stylesheet" href="style.css"/>
-</head>
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+  
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 </head>
 <body>
 
-<button class="quick-theme-toggle" id="quick-theme-toggle" aria-label="Сменить тему">
+  <button class="quick-theme-toggle" id="quick-theme-toggle" aria-label="Сменить тему">
     <svg class="icon-sun hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -47,11 +47,13 @@
     <div class="auth-card">
       <p class="eyebrow">Добро пожаловать</p>
       <h1 class="auth-title">To-Do <span>List</span></h1>
+      
       <div class="auth-tabs">
         <button class="auth-tab" data-tab="guest">Без авторизации</button>
         <button class="auth-tab active" data-tab="login">Войти</button>
         <button class="auth-tab" data-tab="register">Регистрация</button>
       </div>
+
       <div class="auth-form">
         <div class="field-group">
           <label>Email</label>
@@ -89,7 +91,6 @@
   </div>
 
   <div class="app-screen hidden" id="app-screen">
-
     <div class="page" id="page-tasks">
       <div class="app">
         <header>
@@ -156,6 +157,7 @@
 
         <div class="settings-section">
           <p class="settings-label">Аккаунт</p>
+          
           <div id="account-ui-authorized">
             <div class="account-card">
               <div class="account-avatar" id="account-avatar"></div>
@@ -171,9 +173,9 @@
           </div>
           
           <div id="account-ui-guest" class="hidden">
-            <div class="modal-text guest-warning-text">
+            <div class="modal-text guest-warning-text" style="padding: 12px 16px;">
               <strong>Вы не авторизованы.</strong><br>
-              В течение неактивности (3-7 дней) задачи могут сброситься. Рекомендуется войти для сохранения прогресса.
+              Рекомендуется авторизоваться для сохранения прогресса.
             </div>
             <button class="btn-primary" id="guest-login-btn" style="margin-top: 12px; height: 44px; padding: 0;">Войти</button>
           </div>
@@ -258,7 +260,19 @@
         <span>Настройки</span>
       </button>
     </nav>
+  </div>
 
+  <div class="modal-overlay hidden" id="guest-warning-modal">
+    <div class="modal-card">
+      <div class="modal-icon">⚠️</div>
+      <h2 class="modal-title">Внимание</h2>
+      <p class="modal-text">
+        В течение длительной неактивности задачи могут сброситься.<br><br>
+        Рекомендуется войти в аккаунт для сохранения в дальнейшем.
+      </p>
+      <button class="modal-close-btn" id="guest-continue-btn">Продолжить без авторизации</button>
+      <button class="modal-close-btn" id="guest-cancel-btn" style="background: transparent; color: var(--muted); border: 1px solid var(--border); margin-top: 8px;">Отмена</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

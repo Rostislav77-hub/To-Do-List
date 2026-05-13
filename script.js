@@ -29,6 +29,11 @@ let filter = "all";
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
+let savedLoginEmail = "";
+
+const guestWarningModal = document.getElementById("guest-warning-modal");
+const guestContinueBtn = document.getElementById("guest-continue-btn");
+const guestCancelBtn = document.getElementById("guest-cancel-btn");
 
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -188,17 +193,23 @@ function showAuth() {
   authScreen.classList.remove("hidden");
 }
 
-let savedLoginEmail = "";
+function enterGuestMode() {
+  isGuest = true;
+  currentUser = null;
+  showApp({ email: "Гость" });
+}
 
 authTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
-    const prevTab = activeTab;
-    activeTab = tab.dataset.tab;
+    const targetTab = tab.dataset.tab;
 
-    if (activeTab === "guest") {
-      enterGuestMode();
-      return;
+    if (targetTab === "guest") {
+      if (guestWarningModal) guestWarningModal.classList.remove("hidden");
+      return; 
     }
+
+    const prevTab = activeTab;
+    activeTab = targetTab;
 
     if (activeTab === "register") {
       savedLoginEmail = authEmail.value;
@@ -218,10 +229,28 @@ authTabs.forEach((tab) => {
   });
 });
 
-function enterGuestMode() {
-  isGuest = true;
-  currentUser = null;
-  showApp({ email: "Гость" });
+if (guestContinueBtn) {
+  guestContinueBtn.addEventListener("click", () => {
+    guestWarningModal.classList.add("hidden");
+    authTabs.forEach((t) =>
+      t.classList.toggle("active", t.dataset.tab === "guest"),
+    );
+    enterGuestMode();
+  });
+}
+
+if (guestCancelBtn) {
+  guestCancelBtn.addEventListener("click", () => {
+    guestWarningModal.classList.add("hidden");
+  });
+}
+
+if (guestWarningModal) {
+  guestWarningModal.addEventListener("click", (e) => {
+    if (e.target === guestWarningModal) {
+      guestWarningModal.classList.add("hidden");
+    }
+  });
 }
 
 authSubmit.addEventListener("click", async () => {
