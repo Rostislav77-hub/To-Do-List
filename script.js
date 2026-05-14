@@ -87,6 +87,9 @@ function showPage(page) {
   pageTasks.classList.toggle("hidden", page !== "tasks");
   pageSettings.classList.toggle("hidden", page !== "settings");
   navBtns.forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  
+  const themeToggle = document.getElementById("quick-theme-toggle");
+  if (themeToggle) themeToggle.classList.toggle("hidden", page === "settings");
 }
 
 navBtns.forEach((btn) => {
