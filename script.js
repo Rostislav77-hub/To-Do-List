@@ -26,7 +26,7 @@ const layoutBtns = document.querySelectorAll(".layout-btn");
 const settingsLogoutBtn = document.getElementById("settings-logout-btn");
 
 let todos = [];
-let filter = "all";
+let filter = "active";
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
