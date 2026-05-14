@@ -1,17 +1,17 @@
-const CACHE = 'todo-v12';
-const ASSETS = [
-  '/To-Do-List/',
-  '/To-Do-List/index.html',
+const CACHE = 'todo-v13';
+const STATIC = [
   '/To-Do-List/style.css',
   '/To-Do-List/script.js',
   '/To-Do-List/supabase.js',
-  '/To-Do-List/manifest.json'
+  '/To-Do-List/manifest.json',
+  '/To-Do-List/icons/icon-192.png',
+  '/To-Do-List/icons/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+    caches.open(CACHE).then(c => c.addAll(STATIC))
   );
 });
 
@@ -25,6 +25,21 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
   );
