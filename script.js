@@ -522,3 +522,45 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/To-Do-List/sw.js");
   });
 }
+
+const hints = [
+  'Заварить кофе...',
+  'Выключить плиту перед уходом...',
+  'Прочитать 5 страниц...',
+  'Позвонить маме...',
+  'Выпить стакан воды...',
+  'Сделать зарядку...',
+  'Проверить почту...',
+  'Купить продукты...',
+];
+
+let hintIndex = 0;
+
+function animatePlaceholder() {
+  const el = document.getElementById('todo-input');
+  const text = hints[hintIndex];
+  hintIndex = (hintIndex + 1) % hints.length;
+
+  let i = 0;
+  el.placeholder = '';
+
+  const typeInterval = setInterval(() => {
+    el.placeholder = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(typeInterval);
+      setTimeout(() => {
+        const eraseInterval = setInterval(() => {
+          el.placeholder = text.slice(0, i - 1);
+          i--;
+          if (i <= 0) {
+            clearInterval(eraseInterval);
+            setTimeout(animatePlaceholder, 500);
+          }
+        }, 60);
+      }, 2000);
+    }
+  }, 80);
+}
+
+animatePlaceholder();
