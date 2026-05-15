@@ -107,7 +107,7 @@
   </div>
 
   <div class="app-screen hidden" id="app-screen">
-    
+
     <div class="page" id="page-tasks">
       <div class="app">
         <header>
@@ -127,6 +127,13 @@
           <div class="input-wrap">
             <input type="text" id="todo-input" placeholder="Добавить новую задачу…" maxlength="200"/>
           </div>
+          <button class="tag-pick-btn" id="tag-pick-btn" title="Выбрать тег">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M9 2H3a1 1 0 00-1 1v6l6 6 6-6-5-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="5.5" cy="6.5" r="1" fill="currentColor"/>
+            </svg>
+            <span id="tag-pick-label">Тег</span>
+          </button>
           <button class="add-btn" id="add-btn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
@@ -134,11 +141,15 @@
             Добавить
           </button>
         </div>
+
+        <div id="tag-picker-dropdown" class="tag-picker-dropdown hidden"></div>
+
         <div class="filters">
-          <button class="filter-btn" data-filter="all">Все</button>
-          <button class="filter-btn active" data-filter="active">Активные</button>
+          <button class="filter-btn active" data-filter="all">Все</button>
+          <button class="filter-btn" data-filter="active">Активные</button>
           <button class="filter-btn" data-filter="done">Выполненные</button>
         </div>
+        <div class="tag-filters" id="tag-filters"></div>
         <ul id="todo-list"></ul>
         <div class="footer-row">
           <span id="footer-msg"></span>
@@ -186,9 +197,16 @@
           </div>
         </div>
 
+        <div class="settings-section" id="tags-settings-section">
+          <div class="settings-label-row">
+            <p class="settings-label">Теги</p>
+            <button class="add-tag-btn" id="add-tag-btn">+ Добавить</button>
+          </div>
+          <div class="tags-list" id="tags-list"></div>
+        </div>
+
         <div class="settings-section">
           <p class="settings-label">Аккаунт</p>
-          
           <div id="account-ui-authorized">
             <div class="account-card">
               <div class="account-avatar" id="account-avatar"></div>
@@ -303,6 +321,38 @@
       </p>
       <button class="modal-close-btn" id="guest-continue-btn">Продолжить без авторизации</button>
       <button class="modal-close-btn" id="guest-cancel-btn" style="background: transparent; color: var(--muted); border: 1px solid var(--border); margin-top: 8px;">Отмена</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="tag-modal">
+    <div class="modal-card">
+      <h2 class="modal-title" id="tag-modal-title">Новый тег</h2>
+      <div class="field-group" style="margin-bottom:0">
+        <label>Название</label>
+        <input type="text" id="tag-name-input" placeholder="Например: Работа" maxlength="20"/>
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label>Эмодзи</label>
+        <input type="text" id="tag-emoji-input" placeholder="💼" maxlength="2"/>
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label>Цвет</label>
+        <div class="color-options" id="color-options">
+          <button class="color-opt active" data-color="#4A90D9" style="background:#4A90D9"></button>
+          <button class="color-opt" data-color="#4CAF82" style="background:#4CAF82"></button>
+          <button class="color-opt" data-color="#9B59B6" style="background:#9B59B6"></button>
+          <button class="color-opt" data-color="#E8A838" style="background:#E8A838"></button>
+          <button class="color-opt" data-color="#F25F4C" style="background:#F25F4C"></button>
+          <button class="color-opt" data-color="#E91E8C" style="background:#E91E8C"></button>
+          <button class="color-opt" data-color="#00BCD4" style="background:#00BCD4"></button>
+          <button class="color-opt" data-color="#8BC34A" style="background:#8BC34A"></button>
+        </div>
+      </div>
+      <div class="tag-preview" id="tag-preview">
+        <span class="tag-pill" id="tag-preview-pill">💼 Работа</span>
+      </div>
+      <button class="modal-close-btn" id="tag-save-btn">Сохранить</button>
+      <button class="modal-close-btn" id="tag-cancel-btn" style="background:transparent;color:var(--muted);border:1px solid var(--border);margin-top:8px">Отмена</button>
     </div>
   </div>
 
