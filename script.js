@@ -26,7 +26,7 @@ const layoutBtns = document.querySelectorAll(".layout-btn");
 const settingsLogoutBtn = document.getElementById("settings-logout-btn");
 
 let todos = [];
-let filter = "active";
+let activeFilter = "all"; // 🔥 ИСПРАВЛЕНО: Теперь "Все" по умолчанию
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
@@ -158,6 +158,8 @@ function showApp(user) {
 
   document.getElementById("account-ui-authorized").classList.toggle("hidden", isGuest);
   document.getElementById("account-ui-guest").classList.toggle("hidden", !isGuest);
+  const tagsSection = document.getElementById("tags-settings-section");
+  if (tagsSection) tagsSection.style.display = isGuest ? 'none' : 'block';
 
   if (!isGuest) {
     const email = user.email || "Пользователь";
@@ -168,7 +170,9 @@ function showApp(user) {
   authScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
   showPage("tasks");
+  updateFilterUI(); // 🔥 ИСПРАВЛЕНО: Синхронизируем вкладку фильтров при загрузке
   loadTodos();
+  loadTags();
   if (!isGuest) subscribeRealtime();
 }
 
@@ -349,16 +353,18 @@ async function loadTodos() {
 
 async function insertTodo(text) {
   if (isGuest) {
-    const newTodo = { id: Date.now(), text, done: false, created_at: new Date().toISOString(), user_id: "guest" };
+    const newTodo = { id: Date.now(), text, done: false, created_at: new Date().toISOString(), user_id: "guest", tag_id: null };
     todos.unshift(newTodo);
     localStorage.setItem("guest_todos", JSON.stringify(todos));
     render();
     return;
   }
 
-  const { data, error } = await db.from("todos").insert({ text, user_id: currentUser.id }).select().single();
+  const { data, error } = await db.from("todos").insert({ text, user_id: currentUser.id, tag_id: selectedTagId || null }).select().single();
   if (error) { console.error(error); return; }
   todos.unshift(data);
+  selectedTagId = null;
+  updateTagPickBtn();
   render();
 }
 
@@ -405,13 +411,14 @@ const iconCreated = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"
 const iconDone = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 6l3 3 5-5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 function render() {
-  const visible = todos.filter((t) => filter === "all" ? true : filter === "done" ? t.done : !t.done);
+  let visible = todos.filter((t) => activeFilter === "all" ? true : activeFilter === "done" ? t.done : !t.done);
+  if (activeTagFilter) visible = visible.filter(t => t.tag_id === activeTagFilter);
   list.innerHTML = "";
 
   if (visible.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    const msg = filter === "done" ? "Нет выполненных задач" : filter === "active" ? "Все задачи выполнены 🎉" : "Список пуст. Добавьте задачу!";
+    const msg = activeFilter === "done" ? "Нет выполненных задач" : activeFilter === "active" ? "Все задачи выполнены 🎉" : "Список пуст. Добавьте задачу!";
     li.innerHTML = `<span class="icon">✦</span>${msg}`;
     list.appendChild(li);
   } else {
@@ -432,6 +439,11 @@ function createItem(todo) {
   li.className = "todo-item" + (todo.done ? " done" : "");
   li.dataset.id = todo.id;
 
+  const tag = todo.tag_id ? tags.find(t => t.id === todo.tag_id) : null;
+  const tagHtml = tag
+    ? `<span class="tag-pill" style="background:${tag.color}">${tag.emoji || ''} ${tag.name}</span>`
+    : '';
+
   const doneDateHtml = todo.done_at ? `<span class="todo-date date-done">${iconDone} Выполнено: ${formatDate(todo.done_at)}</span>` : "";
 
   li.innerHTML = `
@@ -440,6 +452,7 @@ function createItem(todo) {
     </button>
     <div class="todo-body">
       <span class="todo-text">${escapeHtml(todo.text)}</span>
+      ${tagHtml}
       <div class="todo-dates">
         <span class="todo-date">${iconCreated} Создано: ${formatDate(todo.created_at)}</span>
         ${doneDateHtml}
@@ -464,8 +477,8 @@ async function addTodo() {
     return;
   }
   input.value = "";
-  if (filter === "done") {
-    filter = "all";
+  if (activeFilter === "done") {
+    activeFilter = "all";
     updateFilterUI();
   }
   await insertTodo(text);
@@ -502,12 +515,12 @@ async function clearDone() {
 }
 
 function updateFilterUI() {
-  filterBtns.forEach((b) => b.classList.toggle("active", b.dataset.filter === filter));
+  filterBtns.forEach((b) => b.classList.toggle("active", b.dataset.filter === activeFilter));
 }
 
 filterBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
-    filter = btn.dataset.filter;
+    activeFilter = btn.dataset.filter;
     updateFilterUI();
     render();
   });
@@ -567,3 +580,203 @@ function animatePlaceholder() {
 }
 
 animatePlaceholder();
+let tags = [];
+let selectedTagId = null;
+let activeTagFilter = null;
+let editingTagId = null;
+let selectedColor = '#4A90D9';
+
+async function loadTags() {
+  if (isGuest) { renderTagFilters(); renderTagsList(); return; }
+  const { data, error } = await db.from('tags').select('*').order('created_at');
+  if (error) { console.error(error); return; }
+  tags = data || [];
+  renderTagFilters();
+  renderTagsList();
+}
+
+function renderTagFilters() {
+  const container = document.getElementById('tag-filters');
+  if (!tags.length) { container.innerHTML = ''; return; }
+  container.innerHTML = tags.map(t => `
+    <button class="tag-filter-btn ${activeTagFilter === t.id ? 'active' : ''}"
+      data-tag-id="${t.id}"
+      style="background:${t.color}"
+    >${t.emoji || ''} ${t.name}</button>
+  `).join('');
+  container.querySelectorAll('.tag-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.tagId;
+      activeTagFilter = activeTagFilter === id ? null : id;
+      renderTagFilters();
+      render();
+    });
+  });
+}
+
+function renderTagsList() {
+  const container = document.getElementById('tags-list');
+  if (!tags.length) {
+    container.innerHTML = '<p class="tags-empty">Нет тегов. Создай первый!</p>';
+    return;
+  }
+  container.innerHTML = tags.map(t => `
+    <div class="tag-list-item">
+      <div class="tag-list-pill">
+        <span class="tag-list-dot" style="background:${t.color}"></span>
+        ${t.emoji || ''} ${t.name}
+      </div>
+      <div class="tag-list-actions">
+        <button class="tag-action-btn" data-edit="${t.id}" title="Редактировать">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="tag-action-btn delete" data-delete="${t.id}" title="Удалить">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  container.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openTagModal(btn.dataset.edit));
+  });
+  container.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', () => deleteTag(btn.dataset.delete));
+  });
+}
+
+function renderTagPicker() {
+  const dropdown = document.getElementById('tag-picker-dropdown');
+  dropdown.innerHTML = `
+    <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
+    ${tags.map(t => `
+      <button class="tag-pill-pick ${selectedTagId === t.id ? 'active' : ''}"
+        data-pick="${t.id}"
+        style="background:${t.color}"
+      >${t.emoji || ''} ${t.name}</button>
+    `).join('')}
+  `;
+  dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.pick;
+      selectedTagId = val === 'null' ? null : val;
+      updateTagPickBtn();
+      dropdown.classList.add('hidden');
+    });
+  });
+}
+
+function updateTagPickBtn() {
+  const btn = document.getElementById('tag-pick-btn');
+  const label = document.getElementById('tag-pick-label');
+  if (selectedTagId) {
+    const tag = tags.find(t => t.id === selectedTagId);
+    if (tag) {
+      label.textContent = `${tag.emoji || ''} ${tag.name}`;
+      btn.style.setProperty('--tag-color', tag.color);
+      btn.classList.add('has-tag');
+    }
+  } else {
+    label.textContent = 'Тег';
+    btn.classList.remove('has-tag');
+    btn.style.removeProperty('--tag-color');
+  }
+}
+
+document.getElementById('tag-pick-btn').addEventListener('click', () => {
+  const dropdown = document.getElementById('tag-picker-dropdown');
+  if (dropdown.classList.contains('hidden')) {
+    renderTagPicker();
+    dropdown.classList.remove('hidden');
+  } else {
+    dropdown.classList.add('hidden');
+  }
+});
+
+document.addEventListener('click', e => {
+  const dropdown = document.getElementById('tag-picker-dropdown');
+  const pickBtn = document.getElementById('tag-pick-btn');
+  if (!dropdown.contains(e.target) && e.target !== pickBtn && !pickBtn.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
+
+function openTagModal(editId = null) {
+  editingTagId = editId;
+  selectedColor = '#4A90D9';
+  const modal = document.getElementById('tag-modal');
+  document.getElementById('tag-modal-title').textContent = editId ? 'Редактировать тег' : 'Новый тег';
+  if (editId) {
+    const tag = tags.find(t => t.id === editId);
+    if (tag) {
+      document.getElementById('tag-name-input').value = tag.name;
+      document.getElementById('tag-emoji-input').value = tag.emoji || '';
+      selectedColor = tag.color;
+    }
+  } else {
+    document.getElementById('tag-name-input').value = '';
+    document.getElementById('tag-emoji-input').value = '';
+  }
+  updateColorOptions();
+  updateTagPreview();
+  modal.classList.remove('hidden');
+}
+
+function updateColorOptions() {
+  document.querySelectorAll('.color-opt').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === selectedColor);
+  });
+}
+
+function updateTagPreview() {
+  const name = document.getElementById('tag-name-input').value || 'Название';
+  const emoji = document.getElementById('tag-emoji-input').value || '';
+  const pill = document.getElementById('tag-preview-pill');
+  pill.textContent = `${emoji} ${name}`.trim();
+  pill.style.background = selectedColor;
+}
+
+document.getElementById('tag-name-input').addEventListener('input', updateTagPreview);
+document.getElementById('tag-emoji-input').addEventListener('input', updateTagPreview);
+
+document.getElementById('color-options').addEventListener('click', e => {
+  const btn = e.target.closest('.color-opt');
+  if (!btn) return;
+  selectedColor = btn.dataset.color;
+  updateColorOptions();
+  updateTagPreview();
+});
+
+document.getElementById('add-tag-btn').addEventListener('click', () => openTagModal());
+
+document.getElementById('tag-save-btn').addEventListener('click', async () => {
+  const name = document.getElementById('tag-name-input').value.trim();
+  if (!name) return;
+  const emoji = document.getElementById('tag-emoji-input').value.trim();
+  const payload = { name, color: selectedColor, emoji, user_id: currentUser?.id };
+
+  if (editingTagId) {
+    const { error } = await db.from('tags').update({ name, color: selectedColor, emoji }).eq('id', editingTagId);
+    if (!error) { await loadTags(); }
+  } else {
+    const { error } = await db.from('tags').insert(payload);
+    if (!error) { await loadTags(); }
+  }
+  document.getElementById('tag-modal').classList.add('hidden');
+});
+
+document.getElementById('tag-cancel-btn').addEventListener('click', () => {
+  document.getElementById('tag-modal').classList.add('hidden');
+});
+
+async function deleteTag(id) {
+  await db.from('todos').update({ tag_id: null }).eq('tag_id', id);
+  await db.from('tags').delete().eq('id', id);
+  if (selectedTagId === id) { selectedTagId = null; updateTagPickBtn(); }
+  if (activeTagFilter === id) { activeTagFilter = null; }
+  await loadTags();
+  render();
+}
