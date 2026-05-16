@@ -26,7 +26,8 @@ const layoutBtns = document.querySelectorAll(".layout-btn");
 const settingsLogoutBtn = document.getElementById("settings-logout-btn");
 
 let todos = [];
-let activeFilter = "all"; // 🔥 ИСПРАВЛЕНО: Теперь "Все" по умолчанию
+let activeFilter = "active";
+let activeTagFilter = null;
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
@@ -582,7 +583,6 @@ function animatePlaceholder() {
 animatePlaceholder();
 let tags = [];
 let selectedTagId = null;
-let activeTagFilter = null;
 let editingTagId = null;
 let selectedColor = '#4A90D9';
 
