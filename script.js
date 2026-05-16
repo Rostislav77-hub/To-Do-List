@@ -157,8 +157,10 @@ const guestCancelBtn = document.getElementById("guest-cancel-btn");
 function showApp(user) {
   currentUser = isGuest ? null : user;
 
-  document.getElementById("account-ui-authorized").classList.toggle("hidden", isGuest);
-  document.getElementById("account-ui-guest").classList.toggle("hidden", !isGuest);
+  const authUiEl = document.getElementById("account-ui-authorized");
+  const guestUiEl = document.getElementById("account-ui-guest");
+  if (authUiEl) authUiEl.classList.toggle("hidden", isGuest);
+  if (guestUiEl) guestUiEl.classList.toggle("hidden", !isGuest);
   const tagsSection = document.getElementById("tags-settings-section");
   if (tagsSection) tagsSection.style.display = isGuest ? 'none' : 'block';
 
