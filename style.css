@@ -580,6 +580,7 @@ header h1 span { color: var(--accent); }
   display: flex;
   flex-direction: column;
   gap: 5px;
+  align-items: flex-start;
 }
 
 .add-tag-to-item {
