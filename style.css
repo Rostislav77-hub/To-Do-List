@@ -576,3 +576,50 @@ header h1 span { color: var(--accent); }
   justify-content: center;
   padding: 8px 0 4px;
 }
+.todo-bottom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.add-tag-to-item {
+  font-size: .72rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 0;
+  width: fit-content;
+  transition: color .2s;
+  border: none;
+  background: none;
+}
+.add-tag-to-item:hover { color: var(--accent); }
+
+.item-tag-pill {
+  font-size: .72rem !important;
+  padding: 3px 9px !important;
+  width: fit-content;
+  transition: opacity .2s;
+}
+.item-tag-pill:hover { opacity: .8; }
+
+.item-tag-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  margin-top: 4px;
+  min-width: 180px;
+}
+
+.tag-pill-pick.selected {
+  outline: 2px solid white;
+  outline-offset: 1px;
+}

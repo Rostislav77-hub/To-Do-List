@@ -26,8 +26,7 @@ const layoutBtns = document.querySelectorAll(".layout-btn");
 const settingsLogoutBtn = document.getElementById("settings-logout-btn");
 
 let todos = [];
-let activeFilter = "active";
-let activeTagFilter = null;
+let activeFilter = "all"; // 🔥 ИСПРАВЛЕНО: Теперь "Все" по умолчанию
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
@@ -442,8 +441,8 @@ function createItem(todo) {
 
   const tag = todo.tag_id ? tags.find(t => t.id === todo.tag_id) : null;
   const tagHtml = tag
-    ? `<span class="tag-pill" style="background:${tag.color}">${tag.emoji || ''} ${tag.name}</span>`
-    : '';
+    ? `<span class="tag-pill item-tag-pill" data-todo-id="${todo.id}" style="background:${tag.color};cursor:pointer">${tag.emoji || ''} ${tag.name}</span>`
+    : `<span class="add-tag-to-item" data-todo-id="${todo.id}">+ тег</span>`;
 
   const doneDateHtml = todo.done_at ? `<span class="todo-date date-done">${iconDone} Выполнено: ${formatDate(todo.done_at)}</span>` : "";
 
@@ -453,10 +452,12 @@ function createItem(todo) {
     </button>
     <div class="todo-body">
       <span class="todo-text">${escapeHtml(todo.text)}</span>
-      ${tagHtml}
-      <div class="todo-dates">
-        <span class="todo-date">${iconCreated} Создано: ${formatDate(todo.created_at)}</span>
-        ${doneDateHtml}
+      <div class="todo-bottom-row">
+        ${tagHtml}
+        <div class="todo-dates">
+          <span class="todo-date">${iconCreated} Создано: ${formatDate(todo.created_at)}</span>
+          ${doneDateHtml}
+        </div>
       </div>
     </div>
     <button class="del-btn" title="Удалить">
@@ -466,7 +467,54 @@ function createItem(todo) {
 
   li.querySelector(".check-btn").addEventListener("click", () => toggleDone(todo));
   li.querySelector(".del-btn").addEventListener("click", () => deleteItem(li, todo.id));
+
+  const tagTrigger = li.querySelector(".item-tag-pill, .add-tag-to-item");
+  if (tagTrigger) {
+    tagTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openItemTagPicker(todo, li, tagTrigger);
+    });
+  }
+
   return li;
+}
+
+async function updateTodoTag(todoId, tagId) {
+  todos = todos.map(t => t.id === todoId ? { ...t, tag_id: tagId } : t);
+  render();
+  if (!isGuest) await db.from('todos').update({ tag_id: tagId }).eq('id', todoId);
+}
+
+function openItemTagPicker(todo, li, anchor) {
+  document.querySelectorAll('.item-tag-dropdown').forEach(d => d.remove());
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'item-tag-dropdown';
+  dropdown.innerHTML = `
+    <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
+    ${tags.map(t => `
+      <button class="tag-pill-pick ${todo.tag_id === t.id ? 'selected' : ''}"
+        data-pick="${t.id}"
+        style="background:${t.color}"
+      >${t.emoji || ''} ${t.name}</button>
+    `).join('')}
+  `;
+
+  anchor.parentElement.style.position = 'relative';
+  anchor.parentElement.appendChild(dropdown);
+
+  dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const val = btn.dataset.pick;
+      await updateTodoTag(todo.id, val === 'null' ? null : val);
+      dropdown.remove();
+    });
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', () => dropdown.remove(), { once: true });
+  }, 0);
 }
 
 async function addTodo() {
@@ -583,6 +631,7 @@ function animatePlaceholder() {
 animatePlaceholder();
 let tags = [];
 let selectedTagId = null;
+let activeTagFilter = null;
 let editingTagId = null;
 let selectedColor = '#4A90D9';
 
