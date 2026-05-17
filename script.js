@@ -547,7 +547,10 @@ function openItemTagPicker(todo, li, anchor) {
   });
 
   setTimeout(() => {
-    document.addEventListener('click', () => dropdown.remove(), { once: true });
+    const close = () => dropdown.remove();
+    document.addEventListener('click', close, { once: true });
+    window.addEventListener('scroll', close, { once: true, passive: true });
+    document.querySelector('.page')?.addEventListener('scroll', close, { once: true, passive: true });
   }, 0);
 }
 
