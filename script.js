@@ -32,6 +32,7 @@ let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
 let savedLoginEmail = "";
+let visibleCount = 10;
 
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -416,6 +417,15 @@ const iconDone = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><p
 function render() {
   let visible = todos.filter((t) => activeFilter === "all" ? true : activeFilter === "done" ? t.done : !t.done);
   if (activeTagFilter) visible = visible.filter(t => t.tag_id === activeTagFilter);
+
+  const total = todos.length;
+  const done  = todos.filter((t) => t.done).length;
+  statTotal.textContent = total;
+  statDone.textContent  = done;
+  statLeft.textContent  = total - done;
+  clearBtn.disabled     = done === 0;
+  footerMsg.textContent = total ? `${done} из ${total} выполнено` : "";
+
   list.innerHTML = "";
 
   if (visible.length === 0) {
@@ -424,17 +434,38 @@ function render() {
     const msg = activeFilter === "done" ? "Нет выполненных задач" : activeFilter === "active" ? "Все задачи выполнены 🎉" : "Список пуст. Добавьте задачу!";
     li.innerHTML = `<span class="icon">✦</span>${msg}`;
     list.appendChild(li);
-  } else {
-    visible.forEach((t) => list.appendChild(createItem(t)));
+    return;
   }
 
-  const total = todos.length;
-  const done = todos.filter((t) => t.done).length;
-  statTotal.textContent = total;
-  statDone.textContent = done;
-  statLeft.textContent = total - done;
-  clearBtn.disabled = done === 0;
-  footerMsg.textContent = total ? `${done} из ${total} выполнено` : "";
+  const shown = visible.slice(0, visibleCount);
+  shown.forEach((t) => list.appendChild(createItem(t)));
+
+  const remaining = visible.length - shown.length;
+  if (remaining > 0) {
+    const loadMore = document.createElement("li");
+    loadMore.className = "load-more-item";
+    const next = Math.min(remaining, 5);
+    loadMore.innerHTML = `
+      <div class="load-more-row">
+        <button class="load-more-btn">
+          Показать ещё ${next}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="show-all-btn">Показать все (${remaining})</button>
+      </div>
+    `;
+    loadMore.querySelector(".load-more-btn").addEventListener("click", () => {
+      visibleCount += 5;
+      render();
+    });
+    loadMore.querySelector(".show-all-btn").addEventListener("click", () => {
+      visibleCount = visible.length;
+      render();
+    });
+    list.appendChild(loadMore);
+  }
 }
 
 function createItem(todo) {
@@ -503,12 +534,8 @@ function openItemTagPicker(todo, li, anchor) {
     `).join('')}
   `;
 
-  document.body.appendChild(dropdown);
-
-  const rect = anchor.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = (rect.bottom + 4) + 'px';
-  dropdown.style.left = rect.left + 'px';
+  anchor.parentElement.style.position = 'relative';
+  anchor.parentElement.appendChild(dropdown);
 
   dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -520,10 +547,7 @@ function openItemTagPicker(todo, li, anchor) {
   });
 
   setTimeout(() => {
-    const closeDropdown = () => dropdown.remove();
-    document.addEventListener('click', closeDropdown, { once: true });
-    window.addEventListener('scroll', closeDropdown, { once: true, passive: true });
-    document.querySelector('.page')?.addEventListener('scroll', closeDropdown, { once: true, passive: true });
+    document.addEventListener('click', () => dropdown.remove(), { once: true });
   }, 0);
 }
 
@@ -580,6 +604,7 @@ function updateFilterUI() {
 filterBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
     activeFilter = btn.dataset.filter;
+    visibleCount = 10;
     updateFilterUI();
     render();
   });

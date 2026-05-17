@@ -1521,3 +1521,58 @@ header h1 span {
   outline: 2px solid white;
   outline-offset: 1px;
 }
+.load-more-item {
+  list-style: none;
+}
+
+.load-more-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .85rem;
+  font-weight: 500;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.load-more-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(232, 168, 56, .05);
+}
+
+.load-more-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.load-more-row .load-more-btn {
+  flex: 1;
+}
+
+.show-all-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .82rem;
+  font-weight: 500;
+  padding: 12px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.show-all-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(232, 168, 56, .05);
+}
