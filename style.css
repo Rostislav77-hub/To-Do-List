@@ -156,8 +156,15 @@ body.layout-pc .pc-only { display: flex !important; }
   pointer-events: none;
 }
 
-.loading-card { display: flex; flex-direction: column; align-items: center; gap: 24px; }
-.loading-logo { font-family: "Playfair Display", serif; font-size: 2.2rem; color: var(--text); }
+.loading-card 
+{ display: flex; 
+  flex-direction: column; 
+  align-items: 
+  center; gap: 24px; }
+
+  .loading-logo 
+  { font-family: "Playfair Display", 
+    serif; font-size: 2.2rem; color: var(--text); }
 .loading-logo span { color: var(--accent); }
 
 .loading-dots { display: flex; gap: 8px; align-items: center; }
@@ -604,10 +611,7 @@ header h1 span { color: var(--accent); }
 .item-tag-pill:hover { opacity: .8; }
 
 .item-tag-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 50;
+  z-index: 9999;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -615,8 +619,7 @@ header h1 span { color: var(--accent); }
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.3);
-  margin-top: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
   min-width: 180px;
 }
 

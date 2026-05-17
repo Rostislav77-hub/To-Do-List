@@ -503,8 +503,12 @@ function openItemTagPicker(todo, li, anchor) {
     `).join('')}
   `;
 
-  anchor.parentElement.style.position = 'relative';
-  anchor.parentElement.appendChild(dropdown);
+  document.body.appendChild(dropdown);
+
+  const rect = anchor.getBoundingClientRect();
+  dropdown.style.position = 'fixed';
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.style.left = rect.left + 'px';
 
   dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
     btn.addEventListener('click', async (e) => {
