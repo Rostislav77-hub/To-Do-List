@@ -49,12 +49,9 @@ function applyTheme(theme) {
   themeBtns.forEach((b) => b.classList.toggle("active", b.dataset.theme === theme));
   localStorage.setItem("theme", theme);
 
-  const iconSun = document.querySelector(".icon-sun");
-  const iconMoon = document.querySelector(".icon-moon");
-  if (iconSun && iconMoon) {
-    iconSun.classList.toggle("hidden", actualTheme !== "dark");
-    iconMoon.classList.toggle("hidden", actualTheme === "dark");
-  }
+  // Update ALL theme icons (sidebar + any mobile)
+  document.querySelectorAll(".icon-sun").forEach(el => el.classList.toggle("hidden", actualTheme !== "dark"));
+  document.querySelectorAll(".icon-moon").forEach(el => el.classList.toggle("hidden", actualTheme === "dark"));
 }
 
 function applyLayout(layout) {
@@ -77,7 +74,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 themeBtns.forEach(btn => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
 layoutBtns.forEach(btn => btn.addEventListener("click", () => applyLayout(btn.dataset.layout)));
 
-const quickThemeToggle = document.getElementById("quick-theme-toggle");
+const quickThemeToggle = document.getElementById("sidebar-theme-toggle");
 if (quickThemeToggle) {
   quickThemeToggle.addEventListener("click", () => {
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";
@@ -88,10 +85,10 @@ if (quickThemeToggle) {
 function showPage(page) {
   pageTasks.classList.toggle("hidden", page !== "tasks");
   pageSettings.classList.toggle("hidden", page !== "settings");
-  navBtns.forEach((b) => b.classList.toggle("active", b.dataset.page === page));
-  
-  const themeToggle = document.getElementById("quick-theme-toggle");
-  if (themeToggle) themeToggle.classList.toggle("hidden", page === "settings");
+  // Sync all nav-btns except the theme toggle button
+  document.querySelectorAll(".nav-btn[data-page]").forEach((b) =>
+    b.classList.toggle("active", b.dataset.page === page)
+  );
 }
 
 navBtns.forEach((btn) => {
@@ -169,6 +166,12 @@ function showApp(user) {
     const email = user.email || "Пользователь";
     document.getElementById("account-avatar").textContent = email.charAt(0).toUpperCase();
     document.getElementById("settings-user-email").textContent = email;
+    // Update sidebar avatar
+    const sidebarAvatar = document.getElementById("right-nav-avatar");
+    if (sidebarAvatar) sidebarAvatar.textContent = email.charAt(0).toUpperCase();
+  } else {
+    const sidebarAvatar = document.getElementById("right-nav-avatar");
+    if (sidebarAvatar) sidebarAvatar.textContent = "?";
   }
 
   authScreen.classList.add("hidden");
