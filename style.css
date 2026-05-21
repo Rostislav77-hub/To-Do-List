@@ -66,70 +66,7 @@ body::after {
   display: none !important;
 }
 
-/* pc-only layout removed - replaced by right sidebar nav */
-.top-right-actions {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 1000;
-  display: flex;
-  gap: 12px;
-}
 
-@media (min-width: 641px) {
-  .top-right-actions {
-    display: none !important;
-  }
-}
-
-.action-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.action-icon:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.action-icon:active {
-  transform: scale(0.92);
-}
-
-.action-icon.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgba(232, 168, 56, 0.08);
-}
-
-#quick-theme-toggle {
-  color: var(--text);
-}
-
-@media (max-width: 600px) {
-  .top-right-actions {
-    top: 16px;
-    right: 16px;
-    gap: 8px;
-  }
-
-  .action-icon {
-    width: 40px;
-    height: 40px;
-  }
-}
 
 @keyframes pageFadeIn {
   from {
@@ -254,7 +191,7 @@ body::after {
 
 .app {
   width: 100%;
-  max-width: 560px;
+  max-width: 680px;
 }
 
 .auth-title {
@@ -1072,28 +1009,30 @@ header h1 span {
   overflow-y: auto;
   overflow-x: hidden;
   height: 100%;
-  padding: 32px 24px 60px 24px;
+  padding: 40px 32px 60px;
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
-.page::-webkit-scrollbar {
-  width: 6px;
+.page > .app,
+.page > .settings-page {
+  width: 100%;
+  max-width: 680px;
 }
-.page::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-.page::-webkit-scrollbar-track {
-  background: transparent;
-}
+
+.page::-webkit-scrollbar { width: 6px; }
+.page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.page::-webkit-scrollbar-track { background: transparent; }
 
 
 .right-nav {
   position: relative;
   height: 100%;
-  width: var(--sidebar-width, 240px);
+  width: 240px;
   min-width: 64px;
   max-width: 360px;
   flex-shrink: 0;
@@ -1102,7 +1041,6 @@ header h1 span {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: width 0.05s;
 }
 
 .right-nav-resize-handle {
@@ -1123,6 +1061,7 @@ header h1 span {
   opacity: 0.5;
 }
 
+* Inner scrollable area */
 .right-nav-inner {
   flex: 1;
   overflow-y: auto;
@@ -1135,6 +1074,7 @@ header h1 span {
 }
 .right-nav-inner::-webkit-scrollbar { display: none; }
 
+/* HEADER: User card */
 .right-nav-header {
   margin-bottom: 8px;
 }
@@ -1262,7 +1202,6 @@ header h1 span {
 .rn-chevron,
 .rn-section-title span,
 .rn-item span {
-
   transition: opacity 0.15s;
 }
 
@@ -1368,8 +1307,7 @@ header h1 span {
   flex-direction: column;
   gap: 1px;
   margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
+  padding-top: 4px;
 }
 
 .right-nav.collapsed .rn-user-info,
@@ -1407,56 +1345,109 @@ header h1 span {
   }
 
   .page {
-    order: 0;
-    padding: 20px 16px 100px;
+    padding: 20px 16px 90px;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .page > .app,
+  .page > .settings-page {
+    max-width: 100%;
   }
 
   .right-nav {
-    order: 1;
     width: 100% !important;
     min-width: unset;
     max-width: unset;
-    height: auto;
+    height: 64px;
     border-left: none;
     border-top: 1px solid var(--border);
-    flex-direction: row;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
   }
 
   .right-nav-resize-handle { display: none; }
 
   .right-nav-inner {
     flex-direction: row;
-    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    padding: 0 4px max(0px, env(safe-area-inset-bottom));
     gap: 0;
     overflow-x: auto;
-    overflow-y: visible;
-    align-items: center;
+    overflow-y: hidden;
+    align-items: stretch;
+    height: 100%;
+    scrollbar-width: none;
+  }
+  .right-nav-inner::-webkit-scrollbar { display: none; }
+
+  .right-nav-header { display: flex; margin-bottom: 0; }
+  .rn-actions { display: none; }
+  .rn-divider { display: none; }
+  .rn-section-title { display: none; }
+
+  .right-nav-header .rn-user-btn {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 6px;
+    min-width: 56px;
   }
 
-  .right-nav-header,
-  .rn-actions,
-  .rn-divider,
-  .rn-section-title,
-  .rn-footer {
-    display: none;
+  .right-nav-header .rn-user-info { display: none; }
+  .right-nav-header .rn-chevron { display: none; }
+
+  .right-nav-header .rn-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.72rem;
+  }
+
+  .right-nav-header .rn-user-btn::after {
+    content: "Аккаунт";
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-family: "DM Sans", sans-serif;
   }
 
   .rn-section {
     flex-direction: row;
+    flex: 1;
+    justify-content: center;
   }
 
   .rn-item {
     flex-direction: column;
     gap: 3px;
-    padding: 6px 10px;
-    font-size: 0.62rem;
-    border-radius: 8px;
-    min-width: 60px;
+    padding: 4px 6px;
+    font-size: 0.6rem;
+    border-radius: 6px;
+    min-width: 52px;
     justify-content: center;
+    align-items: center;
+    flex: 1;
   }
 
-  /* Show only the main nav items on mobile */
-  .rn-section:first-of-type { display: flex; }
+  .rn-item span { display: block; }
+  .rn-project-dot { display: none; }
+
+  .rn-footer {
+    flex-direction: row;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    gap: 0;
+  }
+
+  .rn-footer .rn-item {
+    flex: 1;
+    min-width: 52px;
+  }
+
+  .rn-section.rn-projects-section { display: none; }
 }
 
 .modal-overlay {
