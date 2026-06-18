@@ -49,9 +49,12 @@ function applyTheme(theme) {
   themeBtns.forEach((b) => b.classList.toggle("active", b.dataset.theme === theme));
   localStorage.setItem("theme", theme);
 
-  // Update ALL theme icons (sidebar + any mobile)
-  document.querySelectorAll(".icon-sun").forEach(el => el.classList.toggle("hidden", actualTheme !== "dark"));
-  document.querySelectorAll(".icon-moon").forEach(el => el.classList.toggle("hidden", actualTheme === "dark"));
+  const iconSun = document.querySelector(".icon-sun");
+  const iconMoon = document.querySelector(".icon-moon");
+  if (iconSun && iconMoon) {
+    iconSun.classList.toggle("hidden", actualTheme !== "dark");
+    iconMoon.classList.toggle("hidden", actualTheme === "dark");
+  }
 }
 
 function applyLayout(layout) {
@@ -74,7 +77,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 themeBtns.forEach(btn => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
 layoutBtns.forEach(btn => btn.addEventListener("click", () => applyLayout(btn.dataset.layout)));
 
-const quickThemeToggle = document.getElementById("sidebar-theme-toggle");
+const quickThemeToggle = document.getElementById("quick-theme-toggle");
 if (quickThemeToggle) {
   quickThemeToggle.addEventListener("click", () => {
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";
@@ -85,10 +88,10 @@ if (quickThemeToggle) {
 function showPage(page) {
   pageTasks.classList.toggle("hidden", page !== "tasks");
   pageSettings.classList.toggle("hidden", page !== "settings");
-  // Sync all nav-btns except the theme toggle button
-  document.querySelectorAll(".nav-btn[data-page]").forEach((b) =>
-    b.classList.toggle("active", b.dataset.page === page)
-  );
+  navBtns.forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  
+  const themeToggle = document.getElementById("quick-theme-toggle");
+  if (themeToggle) themeToggle.classList.toggle("hidden", page === "settings");
 }
 
 navBtns.forEach((btn) => {
@@ -166,18 +169,7 @@ function showApp(user) {
     const email = user.email || "Пользователь";
     document.getElementById("account-avatar").textContent = email.charAt(0).toUpperCase();
     document.getElementById("settings-user-email").textContent = email;
-    // Update sidebar
-    const sidebarAvatar = document.getElementById("right-nav-avatar");
-    if (sidebarAvatar) sidebarAvatar.textContent = email.charAt(0).toUpperCase();
-    const sidebarName = document.getElementById("right-nav-username");
-    if (sidebarName) sidebarName.textContent = email.split('@')[0] || email;
-  } else {
-    const sidebarAvatar = document.getElementById("right-nav-avatar");
-    if (sidebarAvatar) sidebarAvatar.textContent = "?";
-    const sidebarName = document.getElementById("right-nav-username");
-    if (sidebarName) sidebarName.textContent = "Гость";
   }
-  document.dispatchEvent(new Event('app:ready'));
 
   authScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
@@ -874,93 +866,3 @@ async function deleteTag(id) {
   await loadTags();
   render();
 }
-
-(function() {
-  const sidebar = document.getElementById('right-nav');
-  const handle = document.getElementById('right-nav-resize-handle');
-  if (!sidebar || !handle) return;
-
-  const SIDEBAR_MIN = 64;
-  const SIDEBAR_MAX = 380;
-  const COLLAPSE_THRESHOLD = 100;
-  const STORAGE_KEY = 'sidebar_width';
-
-  const saved = parseInt(localStorage.getItem(STORAGE_KEY));
-  if (saved && saved >= SIDEBAR_MIN && saved <= SIDEBAR_MAX) {
-    sidebar.style.width = saved + 'px';
-    sidebar.classList.toggle('collapsed', saved < COLLAPSE_THRESHOLD);
-  }
-
-  let dragging = false;
-  let startX = 0;
-  let startW = 0;
-
-  function startDrag(e) {
-    dragging = true;
-    startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-    startW = sidebar.offsetWidth;
-    handle.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
-  }
-
-  function onDrag(e) {
-    if (!dragging) return;
-    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-    const delta = startX - clientX;
-    let newW = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, startW + delta));
-    sidebar.style.width = newW + 'px';
-    sidebar.classList.toggle('collapsed', newW < COLLAPSE_THRESHOLD);
-  }
-
-  function endDrag() {
-    if (!dragging) return;
-    dragging = false;
-    handle.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    localStorage.setItem(STORAGE_KEY, sidebar.offsetWidth);
-  }
-
-  handle.addEventListener('mousedown', startDrag);
-  handle.addEventListener('touchstart', startDrag, { passive: false });
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('touchmove', onDrag, { passive: false });
-  document.addEventListener('mouseup', endDrag);
-  document.addEventListener('touchend', endDrag);
-
-  function updateSidebarUser() {
-    const emailEl = document.getElementById('settings-user-email');
-    const nameEl = document.getElementById('right-nav-username');
-    if (nameEl && emailEl && emailEl.textContent) {
-      const email = emailEl.textContent;
-      nameEl.textContent = email.split('@')[0] || email;
-    }
-  }
-
-  const origShowApp = window._origShowApp;
-  document.addEventListener('app:ready', updateSidebarUser);
-
-  const rnAddBtn = document.getElementById('rn-add-task-btn');
-  if (rnAddBtn) {
-    rnAddBtn.addEventListener('click', () => {
-      const input = document.getElementById('todo-input');
-      if (input) {
-        showPage('tasks');
-        setTimeout(() => { input.focus(); input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
-      }
-    });
-  }
-
-  const rnSearchBtn = document.getElementById('rn-search-btn');
-  if (rnSearchBtn) {
-    rnSearchBtn.addEventListener('click', () => {
-      const input = document.getElementById('todo-input');
-      if (input) {
-        showPage('tasks');
-        setTimeout(() => { input.focus(); }, 100);
-      }
-    });
-  }
-})();
