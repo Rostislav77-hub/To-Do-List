@@ -1,3 +1,143 @@
+// ==========================================
+// 1. ЕДИНЫЙ СЛОЙ ХРАНЕНИЯ ДАННЫХ (DataStore)
+// ==========================================
+// Здесь изолирована вся работа с локальным хранилищем и облаком.
+// В будущем сюда можно за 5 минут подключить Firebase или GitHub API.
+
+const hasCloud = typeof window.db !== "undefined" && window.db !== null;
+
+const DataStore = {
+  getLocalTodos() {
+    return JSON.parse(localStorage.getItem("guest_todos") || "[]");
+  },
+  saveLocalTodos(items) {
+    localStorage.setItem("guest_todos", JSON.stringify(items));
+  },
+  getLocalTags() {
+    return JSON.parse(localStorage.getItem("guest_tags") || "[]");
+  },
+  saveLocalTags(items) {
+    localStorage.setItem("guest_tags", JSON.stringify(items));
+  },
+
+  async fetchTodos(isGuest) {
+    if (isGuest || !hasCloud) return this.getLocalTodos();
+    const { data, error } = await db.from("todos").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.error("Ошибка загрузки задач:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async createTodo(text, tagId, isGuest, userId) {
+    if (isGuest || !hasCloud) {
+      const newTodo = {
+        id: "local_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        text,
+        done: false,
+        created_at: new Date().toISOString(),
+        done_at: null,
+        user_id: "guest",
+        tag_id: tagId || null
+      };
+      const current = this.getLocalTodos();
+      current.unshift(newTodo);
+      this.saveLocalTodos(current);
+      return newTodo;
+    }
+
+    const { data, error } = await db
+      .from("todos")
+      .insert({ text, user_id: userId, tag_id: tagId || null })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Ошибка создания задачи:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async updateTodo(id, fields, isGuest, currentTodos) {
+    if (isGuest || !hasCloud) {
+      this.saveLocalTodos(currentTodos);
+      return;
+    }
+    const { error } = await db.from("todos").update(fields).eq("id", id);
+    if (error) console.error("Ошибка обновления задачи:", error);
+  },
+
+  async removeTodo(id, isGuest, currentTodos) {
+    if (isGuest || !hasCloud) {
+      this.saveLocalTodos(currentTodos);
+      return;
+    }
+    const { error } = await db.from("todos").delete().eq("id", id);
+    if (error) console.error("Ошибка удаления задачи:", error);
+  },
+
+  async clearCompletedTodos(doneIds, isGuest, remainingTodos) {
+    if (isGuest || !hasCloud) {
+      this.saveLocalTodos(remainingTodos);
+      return;
+    }
+    if (doneIds.length > 0) {
+      await db.from("todos").delete().in("id", doneIds);
+    }
+  },
+
+  async fetchTags(isGuest) {
+    if (isGuest || !hasCloud) return this.getLocalTags();
+    const { data, error } = await db.from("tags").select("*").order("created_at");
+    if (error) {
+      console.error("Ошибка загрузки тегов:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async saveTag(tagPayload, editingId, isGuest, userId) {
+    if (isGuest || !hasCloud) {
+      const localTags = this.getLocalTags();
+      if (editingId) {
+        const updated = localTags.map(t => t.id === editingId ? { ...t, ...tagPayload } : t);
+        this.saveLocalTags(updated);
+      } else {
+        localTags.push({
+          id: "tag_" + Date.now(),
+          ...tagPayload,
+          created_at: new Date().toISOString()
+        });
+        this.saveLocalTags(localTags);
+      }
+      return;
+    }
+
+    if (editingId) {
+      await db.from("tags").update(tagPayload).eq("id", editingId);
+    } else {
+      await db.from("tags").insert({ ...tagPayload, user_id: userId });
+    }
+  },
+
+  async removeTag(tagId, isGuest) {
+    if (isGuest || !hasCloud) {
+      const localTags = this.getLocalTags().filter(t => t.id !== tagId);
+      this.saveLocalTags(localTags);
+      const localTodos = this.getLocalTodos().map(t => t.tag_id === tagId ? { ...t, tag_id: null } : t);
+      this.saveLocalTodos(localTodos);
+      return;
+    }
+    await db.from("todos").update({ tag_id: null }).eq("tag_id", tagId);
+    await db.from("tags").delete().eq("id", tagId);
+  }
+};
+
+// ==========================================
+// 2. DOM-ЭЛЕМЕНТЫ И СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+// ==========================================
 const loadingScreen = document.getElementById("loading-screen");
 const authScreen = document.getElementById("auth-screen");
 const appScreen = document.getElementById("app-screen");
@@ -26,14 +166,22 @@ const layoutBtns = document.querySelectorAll(".layout-btn");
 const settingsLogoutBtn = document.getElementById("settings-logout-btn");
 
 let todos = [];
+let tags = [];
 let activeFilter = "active";
 let activeTagFilter = null;
+let selectedTagId = null;
+let editingTagId = null;
+let selectedColor = "#4A90D9";
+
 let activeTab = "login";
 let currentUser = null;
 let isGuest = false;
 let savedLoginEmail = "";
 let visibleCount = 10;
 
+// ==========================================
+// 3. ТЕМА, ИНТЕРФЕЙС (ПК/МОБАЙЛ) И НАВИГАЦИЯ
+// ==========================================
 function applyTheme(theme) {
   const root = document.documentElement;
   let actualTheme = theme;
@@ -41,12 +189,10 @@ function applyTheme(theme) {
   if (theme === "system") {
     const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     actualTheme = dark ? "dark" : "light";
-    root.setAttribute("data-theme", actualTheme);
-  } else {
-    root.setAttribute("data-theme", theme);
   }
+  root.setAttribute("data-theme", actualTheme);
 
-  themeBtns.forEach((b) => b.classList.toggle("active", b.dataset.theme === theme));
+  themeBtns.forEach(b => b.classList.toggle("active", b.dataset.theme === theme));
   localStorage.setItem("theme", theme);
 
   const iconSun = document.querySelector(".icon-sun");
@@ -58,11 +204,10 @@ function applyTheme(theme) {
 }
 
 function applyLayout(layout) {
-  document.body.classList.remove('layout-pc', 'layout-mobile');
+  document.body.classList.remove("layout-pc", "layout-mobile");
   document.body.classList.add(`layout-${layout}`);
-  
-  layoutBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.layout === layout));
-  localStorage.setItem('app_layout', layout);
+  layoutBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.layout === layout));
+  localStorage.setItem("app_layout", layout);
 }
 
 const savedTheme = localStorage.getItem("theme") || "dark";
@@ -77,27 +222,22 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 themeBtns.forEach(btn => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
 layoutBtns.forEach(btn => btn.addEventListener("click", () => applyLayout(btn.dataset.layout)));
 
-const quickThemeToggle = document.getElementById("quick-theme-toggle");
-if (quickThemeToggle) {
-  quickThemeToggle.addEventListener("click", () => {
-    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-    applyTheme(isDark ? "light" : "dark");
-  });
-}
+document.getElementById("quick-theme-toggle")?.addEventListener("click", () => {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  applyTheme(isDark ? "light" : "dark");
+});
 
 function showPage(page) {
   pageTasks.classList.toggle("hidden", page !== "tasks");
   pageSettings.classList.toggle("hidden", page !== "settings");
-  navBtns.forEach((b) => b.classList.toggle("active", b.dataset.page === page));
-  
-  const themeToggle = document.getElementById("quick-theme-toggle");
-  if (themeToggle) themeToggle.classList.toggle("hidden", page === "settings");
+  navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === page));
 }
 
-navBtns.forEach((btn) => {
-  btn.addEventListener("click", () => showPage(btn.dataset.page));
-});
+navBtns.forEach(btn => btn.addEventListener("click", () => showPage(btn.dataset.page)));
 
+// ==========================================
+// 4. PWA И УСТАНОВКА ПРИЛОЖЕНИЯ
+// ==========================================
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 const isInStandaloneMode = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
 
@@ -133,7 +273,7 @@ document.getElementById("uninstall-btn").addEventListener("click", () => {
   const isAuthed = !!currentUser;
   document.getElementById("modal-text").textContent = isAuthed
     ? "После удаления приложения потребуется войти в аккаунт заново. Все задачи сохранятся в облаке."
-    : "Вы не авторизованы — задачи не сохранятся. Рекомендуем войти в аккаунт перед удалением.";
+    : "Вы в локальном режиме — убедитесь, что важные задачи сохранены.";
 
   if (isIOS) {
     document.getElementById("uninstall-step1").textContent = "Зажми иконку приложения на экране Домой";
@@ -151,33 +291,52 @@ document.getElementById("modal-close-btn").addEventListener("click", () => {
   document.getElementById("uninstall-modal").classList.add("hidden");
 });
 
+// ==========================================
+// 5. АВТОРИЗАЦИЯ И ГОСТЕВОЙ РЕЖИМ
+// ==========================================
 const guestWarningModal = document.getElementById("guest-warning-modal");
 const guestContinueBtn = document.getElementById("guest-continue-btn");
 const guestCancelBtn = document.getElementById("guest-cancel-btn");
 
-function showApp(user) {
+async function syncGuestDataToCloud(userId) {
+  if (!hasCloud) return;
+  const localTodos = DataStore.getLocalTodos();
+  if (localTodos.length === 0) return;
+
+  const toInsert = localTodos.map(t => ({
+    text: t.text,
+    done: !!t.done,
+    created_at: t.created_at,
+    done_at: t.done_at || null,
+    user_id: userId
+  }));
+
+  const { error } = await db.from("todos").insert(toInsert);
+  if (!error) {
+    localStorage.removeItem("guest_todos");
+  }
+}
+
+async function showApp(user) {
   currentUser = isGuest ? null : user;
 
-  const authUiEl = document.getElementById("account-ui-authorized");
-  const guestUiEl = document.getElementById("account-ui-guest");
-  if (authUiEl) authUiEl.classList.toggle("hidden", isGuest);
-  if (guestUiEl) guestUiEl.classList.toggle("hidden", !isGuest);
-  const tagsSection = document.getElementById("tags-settings-section");
-  if (tagsSection) tagsSection.style.display = isGuest ? 'none' : 'block';
+  document.getElementById("account-ui-authorized")?.classList.toggle("hidden", isGuest);
+  document.getElementById("account-ui-guest")?.classList.toggle("hidden", !isGuest);
 
-  if (!isGuest) {
+  if (!isGuest && user) {
     const email = user.email || "Пользователь";
     document.getElementById("account-avatar").textContent = email.charAt(0).toUpperCase();
     document.getElementById("settings-user-email").textContent = email;
+    await syncGuestDataToCloud(user.id);
   }
 
   authScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
   showPage("tasks");
-  updateFilterUI(); // 🔥 ИСПРАВЛЕНО: Синхронизируем вкладку фильтров при загрузке
-  loadTodos();
-  loadTags();
-  if (!isGuest) subscribeRealtime();
+  updateFilterUI();
+  await loadTags();
+  await loadTodos();
+  if (!isGuest && hasCloud) subscribeRealtime();
 }
 
 function showAuth() {
@@ -185,7 +344,8 @@ function showAuth() {
   currentUser = null;
   todos = [];
   activeTab = "login";
-  authTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === "login"));
+  localStorage.removeItem("guest_mode_active");
+  authTabs.forEach(t => t.classList.toggle("active", t.dataset.tab === "login"));
   authSubmit.textContent = "Войти";
   authError.textContent = "";
   authEmail.value = savedLoginEmail || "";
@@ -198,15 +358,15 @@ function showAuth() {
 function enterGuestMode() {
   isGuest = true;
   currentUser = null;
+  localStorage.setItem("guest_mode_active", "true");
   showApp({ email: "Гость" });
 }
 
-authTabs.forEach((tab) => {
+authTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     const targetTab = tab.dataset.tab;
-
     if (targetTab === "guest") {
-      if (guestWarningModal) guestWarningModal.classList.remove("hidden");
+      guestWarningModal?.classList.remove("hidden");
       return;
     }
 
@@ -222,27 +382,30 @@ authTabs.forEach((tab) => {
       authPassword.value = "";
     }
 
-    authTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === activeTab));
+    authTabs.forEach(t => t.classList.toggle("active", t.dataset.tab === activeTab));
     authSubmit.textContent = activeTab === "login" ? "Войти" : "Зарегистрироваться";
     authError.textContent = "";
   });
 });
 
-if (guestContinueBtn) {
-  guestContinueBtn.addEventListener("click", () => {
-    guestWarningModal.classList.add("hidden");
-    authTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === "guest"));
-    enterGuestMode();
-  });
-}
+guestContinueBtn?.addEventListener("click", () => {
+  guestWarningModal.classList.add("hidden");
+  authTabs.forEach(t => t.classList.toggle("active", t.dataset.tab === "guest"));
+  enterGuestMode();
+});
 
-if (guestCancelBtn) {
-  guestCancelBtn.addEventListener("click", () => guestWarningModal.classList.add("hidden"));
-}
+guestCancelBtn?.addEventListener("click", () => {
+  guestWarningModal.classList.add("hidden");
+});
 
 document.getElementById("guest-login-btn")?.addEventListener("click", showAuth);
 
 authSubmit.addEventListener("click", async () => {
+  if (!hasCloud) {
+    authError.textContent = "Облачная база не подключена. Используйте режим «Без авторизации».";
+    return;
+  }
+
   const email = authEmail.value.trim();
   const password = authPassword.value;
   authError.textContent = "";
@@ -256,7 +419,6 @@ authSubmit.addEventListener("click", async () => {
   authSubmit.textContent = "Подождите…";
 
   let error;
-
   if (activeTab === "login") {
     ({ error } = await db.auth.signInWithPassword({ email, password }));
   } else {
@@ -280,6 +442,7 @@ authSubmit.addEventListener("click", async () => {
 });
 
 authGoogle.addEventListener("click", async () => {
+  if (!hasCloud) return;
   await db.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.href },
@@ -300,8 +463,9 @@ function resetLogoutBtn() {
 settingsLogoutBtn.addEventListener("click", async () => {
   if (settingsLogoutBtn.classList.contains("confirm-mode")) {
     clearTimeout(logoutTimer);
-    await db.auth.signOut();
+    if (hasCloud) await db.auth.signOut();
     resetLogoutBtn();
+    showAuth();
   } else {
     settingsLogoutBtn.classList.add("confirm-mode");
     settingsLogoutBtn.innerHTML = `
@@ -314,14 +478,23 @@ settingsLogoutBtn.addEventListener("click", async () => {
   }
 });
 
-db.auth.onAuthStateChange((_event, session) => {
+if (hasCloud) {
+  db.auth.onAuthStateChange((_event, session) => {
+    loadingScreen.classList.add("fade-out");
+    if (session?.user) {
+      isGuest = false;
+      localStorage.removeItem("guest_mode_active");
+      showApp(session.user);
+    } else if (localStorage.getItem("guest_mode_active") === "true") {
+      enterGuestMode();
+    } else {
+      showAuth();
+    }
+  });
+} else {
   loadingScreen.classList.add("fade-out");
-  if (session?.user) {
-    showApp(session.user);
-  } else {
-    showAuth();
-  }
-});
+  enterGuestMode();
+}
 
 function translateAuthError(msg) {
   if (msg.includes("Invalid login")) return "Неверный email или пароль";
@@ -332,68 +505,35 @@ function translateAuthError(msg) {
 }
 
 const eyeBtn = document.getElementById("eye-btn");
-const eyeOpen = eyeBtn.querySelector(".eye-open");
-const eyeClosed = eyeBtn.querySelector(".eye-closed");
-
 eyeBtn.addEventListener("click", () => {
   const isPassword = authPassword.type === "password";
   authPassword.type = isPassword ? "text" : "password";
-  eyeOpen.classList.toggle("hidden", isPassword);
-  eyeClosed.classList.toggle("hidden", !isPassword);
+  eyeBtn.querySelector(".eye-open").classList.toggle("hidden", isPassword);
+  eyeBtn.querySelector(".eye-closed").classList.toggle("hidden", !isPassword);
 });
 
+// ==========================================
+// 6. РАБОТА С ЗАДАЧАМИ И ОТРИСОВКА
+// ==========================================
 async function loadTodos() {
-  if (isGuest) {
-    todos = JSON.parse(localStorage.getItem("guest_todos") || "[]");
-    render();
-    return;
-  }
-
-  const { data, error } = await db.from("todos").select("*").order("created_at", { ascending: false });
-  if (error) { console.error(error); return; }
-  todos = data || [];
+  todos = await DataStore.fetchTodos(isGuest);
   render();
 }
 
 async function insertTodo(text) {
-  if (isGuest) {
-    const newTodo = { id: Date.now(), text, done: false, created_at: new Date().toISOString(), user_id: "guest", tag_id: null };
-    todos.unshift(newTodo);
-    localStorage.setItem("guest_todos", JSON.stringify(todos));
+  const created = await DataStore.createTodo(text, selectedTagId, isGuest, currentUser?.id);
+  if (created) {
+    if (!isGuest) todos.unshift(created);
+    else todos = DataStore.getLocalTodos();
+    selectedTagId = null;
+    updateTagPickBtn();
     render();
-    return;
   }
-
-  const { data, error } = await db.from("todos").insert({ text, user_id: currentUser.id, tag_id: selectedTagId || null }).select().single();
-  if (error) { console.error(error); return; }
-  todos.unshift(data);
-  selectedTagId = null;
-  updateTagPickBtn();
-  render();
-}
-
-async function updateTodo(id, fields) {
-  if (isGuest) {
-    todos = todos.map((t) => (t.id === id ? { ...t, ...fields } : t));
-    localStorage.setItem("guest_todos", JSON.stringify(todos));
-    return;
-  }
-  const { error } = await db.from("todos").update(fields).eq("id", id);
-  if (error) console.error(error);
-}
-
-async function deleteTodo(id) {
-  if (isGuest) {
-    todos = todos.filter((t) => t.id !== id);
-    localStorage.setItem("guest_todos", JSON.stringify(todos));
-    return;
-  }
-  const { error } = await db.from("todos").delete().eq("id", id);
-  if (error) console.error(error);
 }
 
 let realtimeChannel = null;
 function subscribeRealtime() {
+  if (!hasCloud || !currentUser) return;
   if (realtimeChannel) db.removeChannel(realtimeChannel);
   realtimeChannel = db.channel("todos-changes")
     .on("postgres_changes", { event: "*", schema: "public", table: "todos", filter: `user_id=eq.${currentUser.id}` }, () => loadTodos())
@@ -415,15 +555,15 @@ const iconCreated = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"
 const iconDone = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 6l3 3 5-5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 function render() {
-  let visible = todos.filter((t) => activeFilter === "all" ? true : activeFilter === "done" ? t.done : !t.done);
+  let visible = todos.filter(t => activeFilter === "all" ? true : activeFilter === "done" ? t.done : !t.done);
   if (activeTagFilter) visible = visible.filter(t => t.tag_id === activeTagFilter);
 
   const total = todos.length;
-  const done  = todos.filter((t) => t.done).length;
+  const done = todos.filter(t => t.done).length;
   statTotal.textContent = total;
-  statDone.textContent  = done;
-  statLeft.textContent  = total - done;
-  clearBtn.disabled     = done === 0;
+  statDone.textContent = done;
+  statLeft.textContent = total - done;
+  clearBtn.disabled = done === 0;
   footerMsg.textContent = total ? `${done} из ${total} выполнено` : "";
 
   list.innerHTML = "";
@@ -438,7 +578,7 @@ function render() {
   }
 
   const shown = visible.slice(0, visibleCount);
-  shown.forEach((t) => list.appendChild(createItem(t)));
+  shown.forEach(t => list.appendChild(createItem(t)));
 
   const remaining = visible.length - shown.length;
   if (remaining > 0) {
@@ -475,8 +615,8 @@ function createItem(todo) {
 
   const tag = todo.tag_id ? tags.find(t => t.id === todo.tag_id) : null;
   const tagHtml = tag
-    ? `<span class="tag-pill item-tag-pill" data-todo-id="${todo.id}" style="background:${tag.color};cursor:pointer">${tag.emoji || ''} ${tag.name}</span>`
-    : `<span class="add-tag-to-item" data-todo-id="${todo.id}">+ тег</span>`;
+    ? `<span class="tag-pill item-tag-pill" data-todo-id="${todo.id}" style="background:${tag.color};cursor:pointer">${tag.emoji || ""} ${escapeHtml(tag.name)}</span>`
+    : `<button class="add-tag-to-item" data-todo-id="${todo.id}">+ тег</button>`;
 
   const doneDateHtml = todo.done_at ? `<span class="todo-date date-done">${iconDone} Выполнено: ${formatDate(todo.done_at)}</span>` : "";
 
@@ -506,7 +646,7 @@ function createItem(todo) {
   if (tagTrigger) {
     tagTrigger.addEventListener("click", (e) => {
       e.stopPropagation();
-      openItemTagPicker(todo, li, tagTrigger);
+      openItemTagPicker(todo, tagTrigger);
     });
   }
 
@@ -516,41 +656,44 @@ function createItem(todo) {
 async function updateTodoTag(todoId, tagId) {
   todos = todos.map(t => t.id === todoId ? { ...t, tag_id: tagId } : t);
   render();
-  if (!isGuest) await db.from('todos').update({ tag_id: tagId }).eq('id', todoId);
+  await DataStore.updateTodo(todoId, { tag_id: tagId }, isGuest, todos);
 }
 
-function openItemTagPicker(todo, li, anchor) {
-  document.querySelectorAll('.item-tag-dropdown').forEach(d => d.remove());
+function openItemTagPicker(todo, anchor) {
+  document.querySelectorAll(".item-tag-dropdown").forEach(d => d.remove());
 
-  const dropdown = document.createElement('div');
-  dropdown.className = 'item-tag-dropdown';
-  dropdown.innerHTML = `
-    <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
-    ${tags.map(t => `
-      <button class="tag-pill-pick ${todo.tag_id === t.id ? 'selected' : ''}"
-        data-pick="${t.id}"
-        style="background:${t.color}"
-      >${t.emoji || ''} ${t.name}</button>
-    `).join('')}
-  `;
+  const dropdown = document.createElement("div");
+  dropdown.className = "item-tag-dropdown";
 
-  anchor.parentElement.style.position = 'relative';
+  if (tags.length === 0) {
+    dropdown.innerHTML = `<span style="font-size:.75rem;color:var(--muted);padding:4px 8px;">Сначала создайте теги в Настройках</span>`;
+  } else {
+    dropdown.innerHTML = `
+      <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
+      ${tags.map(t => `
+        <button class="tag-pill-pick ${todo.tag_id === t.id ? "selected" : ""}"
+          data-pick="${t.id}"
+          style="background:${t.color}"
+        >${t.emoji || ""} ${escapeHtml(t.name)}</button>
+      `).join("")}
+    `;
+  }
+
+  anchor.parentElement.style.position = "relative";
   anchor.parentElement.appendChild(dropdown);
 
-  dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+  dropdown.querySelectorAll(".tag-pill-pick").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const val = btn.dataset.pick;
-      await updateTodoTag(todo.id, val === 'null' ? null : val);
+      await updateTodoTag(todo.id, val === "null" ? null : val);
       dropdown.remove();
     });
   });
 
   setTimeout(() => {
     const close = () => dropdown.remove();
-    document.addEventListener('click', close, { once: true });
-    window.addEventListener('scroll', close, { once: true, passive: true });
-    document.querySelector('.page')?.addEventListener('scroll', close, { once: true, passive: true });
+    document.addEventListener("click", close, { once: true });
   }, 0);
 }
 
@@ -564,7 +707,7 @@ async function addTodo() {
   }
   input.value = "";
   if (activeFilter === "done") {
-    activeFilter = "all";
+    activeFilter = "active";
     updateFilterUI();
   }
   await insertTodo(text);
@@ -574,37 +717,32 @@ async function addTodo() {
 async function toggleDone(todo) {
   const nowDone = !todo.done;
   const doneAt = nowDone ? new Date().toISOString() : null;
-  todos = todos.map((t) => t.id === todo.id ? { ...t, done: nowDone, done_at: doneAt } : t);
+  todos = todos.map(t => t.id === todo.id ? { ...t, done: nowDone, done_at: doneAt } : t);
   render();
-  await updateTodo(todo.id, { done: nowDone, done_at: doneAt });
+  await DataStore.updateTodo(todo.id, { done: nowDone, done_at: doneAt }, isGuest, todos);
 }
 
 async function deleteItem(li, id) {
   li.classList.add("removing");
   li.addEventListener("animationend", async () => {
-    todos = todos.filter((t) => t.id !== id);
+    todos = todos.filter(t => t.id !== id);
     render();
-    await deleteTodo(id);
+    await DataStore.removeTodo(id, isGuest, todos);
   }, { once: true });
 }
 
 async function clearDone() {
-  const doneIds = todos.filter((t) => t.done).map((t) => t.id);
-  todos = todos.filter((t) => !t.done);
+  const doneIds = todos.filter(t => t.done).map(t => t.id);
+  todos = todos.filter(t => !t.done);
   render();
-
-  if (isGuest) {
-    localStorage.setItem("guest_todos", JSON.stringify(todos));
-    return;
-  }
-  await db.from("todos").delete().in("id", doneIds);
+  await DataStore.clearCompletedTodos(doneIds, isGuest, todos);
 }
 
 function updateFilterUI() {
-  filterBtns.forEach((b) => b.classList.toggle("active", b.dataset.filter === activeFilter));
+  filterBtns.forEach(b => b.classList.toggle("active", b.dataset.filter === activeFilter));
 }
 
-filterBtns.forEach((btn) => {
+filterBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     activeFilter = btn.dataset.filter;
     visibleCount = 10;
@@ -620,32 +758,233 @@ addBtn.addEventListener("click", addTodo);
 input.addEventListener("keydown", (e) => { if (e.key === "Enter") addTodo(); });
 clearBtn.addEventListener("click", clearDone);
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/To-Do-List/sw.js");
+// ==========================================
+// 7. УПРАВЛЕНИЕ ТЕГАМИ
+// ==========================================
+async function loadTags() {
+  tags = await DataStore.fetchTags(isGuest);
+  renderTagFilters();
+  renderTagsList();
+}
+
+function renderTagFilters() {
+  const container = document.getElementById("tag-filters");
+  if (!tags.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = tags.map(t => `
+    <button class="tag-filter-btn ${activeTagFilter === t.id ? "active" : ""}"
+      data-tag-id="${t.id}"
+      style="background:${t.color}"
+    >${t.emoji || ""} ${escapeHtml(t.name)}</button>
+  `).join("");
+
+  container.querySelectorAll(".tag-filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.tagId;
+      activeTagFilter = activeTagFilter === id ? null : id;
+      renderTagFilters();
+      render();
+    });
   });
 }
 
+function renderTagsList() {
+  const container = document.getElementById("tags-list");
+  if (!tags.length) {
+    container.innerHTML = '<p class="tags-empty">Нет тегов. Создай первый!</p>';
+    return;
+  }
+  container.innerHTML = tags.map(t => `
+    <div class="tag-list-item">
+      <div class="tag-list-pill">
+        <span class="tag-list-dot" style="background:${t.color}"></span>
+        ${t.emoji || ""} ${escapeHtml(t.name)}
+      </div>
+      <div class="tag-list-actions">
+        <button class="tag-action-btn" data-edit="${t.id}" title="Редактировать">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="tag-action-btn delete" data-delete="${t.id}" title="Удалить">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join("");
+
+  container.querySelectorAll("[data-edit]").forEach(btn => {
+    btn.addEventListener("click", () => openTagModal(btn.dataset.edit));
+  });
+  container.querySelectorAll("[data-delete]").forEach(btn => {
+    btn.addEventListener("click", () => deleteTag(btn.dataset.delete));
+  });
+}
+
+function renderTagPicker() {
+  const dropdown = document.getElementById("tag-picker-dropdown");
+  if (!tags.length) {
+    dropdown.innerHTML = `<span style="font-size:.8rem;color:var(--muted);padding:4px 8px;">Тегов пока нет. Добавьте их в Настройках!</span>`;
+    return;
+  }
+  dropdown.innerHTML = `
+    <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
+    ${tags.map(t => `
+      <button class="tag-pill-pick ${selectedTagId === t.id ? "active" : ""}"
+        data-pick="${t.id}"
+        style="background:${t.color}"
+      >${t.emoji || ""} ${escapeHtml(t.name)}</button>
+    `).join("")}
+  `;
+  dropdown.querySelectorAll(".tag-pill-pick").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.pick;
+      selectedTagId = val === "null" ? null : val;
+      updateTagPickBtn();
+      dropdown.classList.add("hidden");
+    });
+  });
+}
+
+function updateTagPickBtn() {
+  const btn = document.getElementById("tag-pick-btn");
+  const label = document.getElementById("tag-pick-label");
+  if (selectedTagId) {
+    const tag = tags.find(t => t.id === selectedTagId);
+    if (tag) {
+      label.textContent = `${tag.emoji || ""} ${tag.name}`.trim();
+      btn.style.setProperty("--tag-color", tag.color);
+      btn.classList.add("has-tag");
+      return;
+    }
+  }
+  label.textContent = "Тег";
+  btn.classList.remove("has-tag");
+  btn.style.removeProperty("--tag-color");
+}
+
+document.getElementById("tag-pick-btn").addEventListener("click", () => {
+  const dropdown = document.getElementById("tag-picker-dropdown");
+  if (dropdown.classList.contains("hidden")) {
+    renderTagPicker();
+    dropdown.classList.remove("hidden");
+  } else {
+    dropdown.classList.add("hidden");
+  }
+});
+
+document.addEventListener("click", e => {
+  const dropdown = document.getElementById("tag-picker-dropdown");
+  const pickBtn = document.getElementById("tag-pick-btn");
+  if (!dropdown.contains(e.target) && e.target !== pickBtn && !pickBtn.contains(e.target)) {
+    dropdown.classList.add("hidden");
+  }
+});
+
+function openTagModal(editId = null) {
+  editingTagId = editId;
+  selectedColor = "#4A90D9";
+  const modal = document.getElementById("tag-modal");
+  document.getElementById("tag-modal-title").textContent = editId ? "Редактировать тег" : "Новый тег";
+  if (editId) {
+    const tag = tags.find(t => t.id === editId);
+    if (tag) {
+      document.getElementById("tag-name-input").value = tag.name;
+      document.getElementById("tag-emoji-input").value = tag.emoji || "";
+      selectedColor = tag.color;
+    }
+  } else {
+    document.getElementById("tag-name-input").value = "";
+    document.getElementById("tag-emoji-input").value = "";
+  }
+  updateColorOptions();
+  updateTagPreview();
+  modal.classList.remove("hidden");
+}
+
+function updateColorOptions() {
+  document.querySelectorAll(".color-opt").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.color === selectedColor);
+  });
+}
+
+function updateTagPreview() {
+  const name = document.getElementById("tag-name-input").value || "Название";
+  const emoji = document.getElementById("tag-emoji-input").value || "";
+  const pill = document.getElementById("tag-preview-pill");
+  pill.textContent = `${emoji} ${name}`.trim();
+  pill.style.background = selectedColor;
+}
+
+document.getElementById("tag-name-input").addEventListener("input", updateTagPreview);
+document.getElementById("tag-emoji-input").addEventListener("input", updateTagPreview);
+
+document.getElementById("color-options").addEventListener("click", e => {
+  const btn = e.target.closest(".color-opt");
+  if (!btn) return;
+  selectedColor = btn.dataset.color;
+  updateColorOptions();
+  updateTagPreview();
+});
+
+document.getElementById("add-tag-btn").addEventListener("click", () => openTagModal());
+
+document.getElementById("tag-save-btn").addEventListener("click", async () => {
+  const name = document.getElementById("tag-name-input").value.trim();
+  if (!name) return;
+  const emoji = document.getElementById("tag-emoji-input").value.trim();
+
+  await DataStore.saveTag({ name, color: selectedColor, emoji }, editingTagId, isGuest, currentUser?.id);
+  await loadTags();
+  render();
+  document.getElementById("tag-modal").classList.add("hidden");
+});
+
+document.getElementById("tag-cancel-btn").addEventListener("click", () => {
+  document.getElementById("tag-modal").classList.add("hidden");
+});
+
+async function deleteTag(id) {
+  await DataStore.removeTag(id, isGuest);
+  todos = todos.map(t => t.tag_id === id ? { ...t, tag_id: null } : t);
+  if (selectedTagId === id) {
+    selectedTagId = null;
+    updateTagPickBtn();
+  }
+  if (activeTagFilter === id) {
+    activeTagFilter = null;
+  }
+  await loadTags();
+  render();
+}
+
+// ==========================================
+// 8. АНИМАЦИЯ ПЛЕЙСХОЛДЕРА И SERVICE WORKER
+// ==========================================
 const hints = [
-  'Заварить кофе...',
-  'Выключить плиту перед уходом...',
-  'Прочитать 5 страниц...',
-  'Позвонить маме...',
-  'Выпить стакан воды...',
-  'Сделать зарядку...',
-  'Проверить почту...',
-  'Купить продукты...',
+  "Заварить кофе...",
+  "Выключить плиту перед уходом...",
+  "Прочитать 5 страниц...",
+  "Позвонить маме...",
+  "Выпить стакан воды...",
+  "Сделать зарядку...",
+  "Проверить почту...",
+  "Купить продукты...",
 ];
 
 let hintIndex = 0;
-
 function animatePlaceholder() {
-  const el = document.getElementById('todo-input');
+  const el = document.getElementById("todo-input");
+  if (!el) return;
   const text = hints[hintIndex];
   hintIndex = (hintIndex + 1) % hints.length;
 
   let i = 0;
-  el.placeholder = '';
+  el.placeholder = "";
 
   const typeInterval = setInterval(() => {
     el.placeholder = text.slice(0, i + 1);
@@ -665,204 +1004,10 @@ function animatePlaceholder() {
     }
   }, 80);
 }
-
 animatePlaceholder();
-let tags = [];
-let selectedTagId = null;
-let editingTagId = null;
-let selectedColor = '#4A90D9';
 
-async function loadTags() {
-  if (isGuest) { renderTagFilters(); renderTagsList(); return; }
-  const { data, error } = await db.from('tags').select('*').order('created_at');
-  if (error) { console.error(error); return; }
-  tags = data || [];
-  renderTagFilters();
-  renderTagsList();
-}
-
-function renderTagFilters() {
-  const container = document.getElementById('tag-filters');
-  if (!tags.length) { container.innerHTML = ''; return; }
-  container.innerHTML = tags.map(t => `
-    <button class="tag-filter-btn ${activeTagFilter === t.id ? 'active' : ''}"
-      data-tag-id="${t.id}"
-      style="background:${t.color}"
-    >${t.emoji || ''} ${t.name}</button>
-  `).join('');
-  container.querySelectorAll('.tag-filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.tagId;
-      activeTagFilter = activeTagFilter === id ? null : id;
-      renderTagFilters();
-      render();
-    });
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/To-Do-List/sw.js");
   });
-}
-
-function renderTagsList() {
-  const container = document.getElementById('tags-list');
-  if (!tags.length) {
-    container.innerHTML = '<p class="tags-empty">Нет тегов. Создай первый!</p>';
-    return;
-  }
-  container.innerHTML = tags.map(t => `
-    <div class="tag-list-item">
-      <div class="tag-list-pill">
-        <span class="tag-list-dot" style="background:${t.color}"></span>
-        ${t.emoji || ''} ${t.name}
-      </div>
-      <div class="tag-list-actions">
-        <button class="tag-action-btn" data-edit="${t.id}" title="Редактировать">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="tag-action-btn delete" data-delete="${t.id}" title="Удалить">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  `).join('');
-  container.querySelectorAll('[data-edit]').forEach(btn => {
-    btn.addEventListener('click', () => openTagModal(btn.dataset.edit));
-  });
-  container.querySelectorAll('[data-delete]').forEach(btn => {
-    btn.addEventListener('click', () => deleteTag(btn.dataset.delete));
-  });
-}
-
-function renderTagPicker() {
-  const dropdown = document.getElementById('tag-picker-dropdown');
-  dropdown.innerHTML = `
-    <button class="tag-pill-pick no-tag" data-pick="null">✕ Без тега</button>
-    ${tags.map(t => `
-      <button class="tag-pill-pick ${selectedTagId === t.id ? 'active' : ''}"
-        data-pick="${t.id}"
-        style="background:${t.color}"
-      >${t.emoji || ''} ${t.name}</button>
-    `).join('')}
-  `;
-  dropdown.querySelectorAll('.tag-pill-pick').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const val = btn.dataset.pick;
-      selectedTagId = val === 'null' ? null : val;
-      updateTagPickBtn();
-      dropdown.classList.add('hidden');
-    });
-  });
-}
-
-function updateTagPickBtn() {
-  const btn = document.getElementById('tag-pick-btn');
-  const label = document.getElementById('tag-pick-label');
-  if (selectedTagId) {
-    const tag = tags.find(t => t.id === selectedTagId);
-    if (tag) {
-      label.textContent = `${tag.emoji || ''} ${tag.name}`;
-      btn.style.setProperty('--tag-color', tag.color);
-      btn.classList.add('has-tag');
-    }
-  } else {
-    label.textContent = 'Тег';
-    btn.classList.remove('has-tag');
-    btn.style.removeProperty('--tag-color');
-  }
-}
-
-document.getElementById('tag-pick-btn').addEventListener('click', () => {
-  const dropdown = document.getElementById('tag-picker-dropdown');
-  if (dropdown.classList.contains('hidden')) {
-    renderTagPicker();
-    dropdown.classList.remove('hidden');
-  } else {
-    dropdown.classList.add('hidden');
-  }
-});
-
-document.addEventListener('click', e => {
-  const dropdown = document.getElementById('tag-picker-dropdown');
-  const pickBtn = document.getElementById('tag-pick-btn');
-  if (!dropdown.contains(e.target) && e.target !== pickBtn && !pickBtn.contains(e.target)) {
-    dropdown.classList.add('hidden');
-  }
-});
-
-function openTagModal(editId = null) {
-  editingTagId = editId;
-  selectedColor = '#4A90D9';
-  const modal = document.getElementById('tag-modal');
-  document.getElementById('tag-modal-title').textContent = editId ? 'Редактировать тег' : 'Новый тег';
-  if (editId) {
-    const tag = tags.find(t => t.id === editId);
-    if (tag) {
-      document.getElementById('tag-name-input').value = tag.name;
-      document.getElementById('tag-emoji-input').value = tag.emoji || '';
-      selectedColor = tag.color;
-    }
-  } else {
-    document.getElementById('tag-name-input').value = '';
-    document.getElementById('tag-emoji-input').value = '';
-  }
-  updateColorOptions();
-  updateTagPreview();
-  modal.classList.remove('hidden');
-}
-
-function updateColorOptions() {
-  document.querySelectorAll('.color-opt').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.color === selectedColor);
-  });
-}
-
-function updateTagPreview() {
-  const name = document.getElementById('tag-name-input').value || 'Название';
-  const emoji = document.getElementById('tag-emoji-input').value || '';
-  const pill = document.getElementById('tag-preview-pill');
-  pill.textContent = `${emoji} ${name}`.trim();
-  pill.style.background = selectedColor;
-}
-
-document.getElementById('tag-name-input').addEventListener('input', updateTagPreview);
-document.getElementById('tag-emoji-input').addEventListener('input', updateTagPreview);
-
-document.getElementById('color-options').addEventListener('click', e => {
-  const btn = e.target.closest('.color-opt');
-  if (!btn) return;
-  selectedColor = btn.dataset.color;
-  updateColorOptions();
-  updateTagPreview();
-});
-
-document.getElementById('add-tag-btn').addEventListener('click', () => openTagModal());
-
-document.getElementById('tag-save-btn').addEventListener('click', async () => {
-  const name = document.getElementById('tag-name-input').value.trim();
-  if (!name) return;
-  const emoji = document.getElementById('tag-emoji-input').value.trim();
-  const payload = { name, color: selectedColor, emoji, user_id: currentUser?.id };
-
-  if (editingTagId) {
-    const { error } = await db.from('tags').update({ name, color: selectedColor, emoji }).eq('id', editingTagId);
-    if (!error) { await loadTags(); }
-  } else {
-    const { error } = await db.from('tags').insert(payload);
-    if (!error) { await loadTags(); }
-  }
-  document.getElementById('tag-modal').classList.add('hidden');
-});
-
-document.getElementById('tag-cancel-btn').addEventListener('click', () => {
-  document.getElementById('tag-modal').classList.add('hidden');
-});
-
-async function deleteTag(id) {
-  await db.from('todos').update({ tag_id: null }).eq('tag_id', id);
-  await db.from('tags').delete().eq('id', id);
-  if (selectedTagId === id) { selectedTagId = null; updateTagPickBtn(); }
-  if (activeTagFilter === id) { activeTagFilter = null; }
-  await loadTags();
-  render();
 }

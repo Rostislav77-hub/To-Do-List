@@ -1,4 +1,4 @@
-const CACHE = 'todo-v13';
+const CACHE = 'todo-v16';
 const STATIC = [
   '/To-Do-List/style.css',
   '/To-Do-List/script.js',
